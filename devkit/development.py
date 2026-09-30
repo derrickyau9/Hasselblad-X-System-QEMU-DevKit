@@ -2,6 +2,7 @@
 from pathlib import Path
 import os
 import shutil
+import sys
 from .core import ASSETS, Task, GuestLock
 
 def workspace(device):
@@ -17,15 +18,25 @@ def find_ndk():
     configured = os.environ.get('ANDROID_NDK_HOME') or os.environ.get('ANDROID_NDK_ROOT')
     if configured:
         return Path(configured)
-    sdk = Path(os.environ.get('ANDROID_SDK_ROOT', str(Path(os.environ.get('LOCALAPPDATA', Path.home())) / 'Android/Sdk')))
+    if os.name == 'nt':
+        default_sdk = Path(os.environ.get('LOCALAPPDATA', Path.home())) / 'Android/Sdk'
+    elif sys.platform == 'darwin':
+        default_sdk = Path.home() / 'Library/Android/sdk'
+    else:
+        default_sdk = Path.home() / 'Android/Sdk'
+    sdk = Path(os.environ.get('ANDROID_SDK_ROOT', str(default_sdk)))
     candidates = sorted((sdk / 'ndk').glob('*'), reverse=True)
-    return next((p for p in candidates if (p / 'toolchains/llvm/prebuilt/windows-x86_64/bin/clang.exe').exists()), None)
+    hosts = ('windows-x86_64',) if os.name == 'nt' else (('darwin-arm64', 'darwin-x86_64') if sys.platform == 'darwin' else ('linux-x86_64',))
+    compiler = 'clang.exe' if os.name == 'nt' else 'clang'
+    return next((p for p in candidates if any((p / f'toolchains/llvm/prebuilt/{host}/bin/{compiler}').exists() for host in hosts)), None)
 
 def build(device, ndk, task=None):
     task = task or Task()
     root = workspace(device)
-    compiler = Path(ndk) / 'toolchains/llvm/prebuilt/windows-x86_64/bin/clang.exe'
-    if not compiler.exists():
+    hosts = ('windows-x86_64',) if os.name == 'nt' else (('darwin-arm64', 'darwin-x86_64') if sys.platform == 'darwin' else ('linux-x86_64',))
+    compiler_name = 'clang.exe' if os.name == 'nt' else 'clang'
+    compiler = next((Path(ndk) / f'toolchains/llvm/prebuilt/{host}/bin/{compiler_name}' for host in hosts if (Path(ndk) / f'toolchains/llvm/prebuilt/{host}/bin/{compiler_name}').exists()), None)
+    if compiler is None:
         raise FileNotFoundError('Select an Android NDK folder containing toolchains/llvm (r27 validated)')
     output = device / 'payload-stage/app'
     output.mkdir(exist_ok=True)

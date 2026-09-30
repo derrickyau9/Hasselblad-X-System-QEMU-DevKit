@@ -9,17 +9,30 @@ import time
 class GuestLock:
     """One writer across workbench windows, builders and QEMU sessions."""
     def __init__(self, device):
-        import msvcrt
         self.file = (Path(device) / 'session.lock').open('a+b')
-        if self.file.tell() == 0:
-            self.file.write(b'0'); self.file.flush()
-        self.file.seek(0)
-        try:
-            msvcrt.locking(self.file.fileno(), msvcrt.LK_NBLCK, 1)
-        except OSError:
-            self.file.close()
-            raise RuntimeError('Another session owns this guest. Stop it before starting or building.') from None
-    def close(self): self.file.close()
+        if os.name == 'nt':
+            import msvcrt
+            if self.file.tell() == 0:
+                self.file.write(b'0'); self.file.flush()
+            self.file.seek(0)
+            try:
+                msvcrt.locking(self.file.fileno(), msvcrt.LK_NBLCK, 1)
+            except OSError:
+                self.file.close()
+                raise RuntimeError('Another session owns this guest. Stop it before starting or building.') from None
+            self._unlock = None
+        else:
+            import fcntl
+            try:
+                fcntl.flock(self.file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except (BlockingIOError, OSError):
+                self.file.close()
+                raise RuntimeError('Another session owns this guest. Stop it before starting or building.') from None
+            self._unlock = lambda: fcntl.flock(self.file.fileno(), fcntl.LOCK_UN)
+    def close(self):
+        if self._unlock:
+            self._unlock()
+        self.file.close()
     def __enter__(self): return self
     def __exit__(self, *_): self.close()
 
