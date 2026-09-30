@@ -1,0 +1,7 @@
+{
+  "7zr": {"url": "https://github.com/ip7z/7zip/releases/download/26.03/7zr.exe", "algorithm": "sha256", "digest": "ad4c82fadcbdf93c03b4fc440f300509c7d60c5c2f4d183e35d9d70d6957037d"},
+  "7zip": {"url": "https://github.com/ip7z/7zip/releases/download/26.03/7z2603-x64.exe", "algorithm": "sha256", "digest": "0859c524b8a63551848f0c246abddcb1d0b7b656b0fbfe879f8d85e61a9e6edd"},
+  "qemu": {"url": "https://qemu.weilnetz.de/w64/qemu-w64-setup-20260811.exe", "algorithm": "sha512", "digest": "5bcf9eed634e8575a37b74f445af41a2fe4106da512d0c30c368301d4c105037fdfab40a5287367a28a957624cddebbc8c07e16c88ab6634f554cdf3d16bf543"},
+  "android": {"url": "https://dl.google.com/android/repository/sys-img/android/arm64-v8a-28_r02.zip", "algorithm": "sha1", "digest": "e209114dd0dfc2f4e0d328f5fd7367fec39ee1bd"},
+  "platform-tools": {"url": "https://dl.google.com/android/repository/platform-tools_r37.0.1-win.zip", "algorithm": "sha1", "digest": "e03e78b1d80b396f1c3358e31251cb31740e1110"}
+}
