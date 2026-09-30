@@ -1,6 +1,6 @@
 # Hasselblad X2D II QEMU DevKit
 
-**Windows 原生工作台：拖入官方固件，启动原厂界面，开发你的应用。**
+**Windows 原生工作台；也支持在 Apple Silicon Mac 上从源码运行：拖入官方固件，启动原厂界面，开发你的应用。**
 
 [English](README.md) · [下载 Windows 便携版](https://github.com/derrickyau9/Hasselblad-X2D-II-QEMU-DevKit/releases/latest) · [哈苏官方固件](https://www.hasselblad.com/zh-cn/x-system/firmware/)
 
@@ -29,6 +29,7 @@
 | 项目 | 状态 |
 | --- | --- |
 | Windows x64 | 支持；原生 Qt 便携程序 |
+| macOS Apple Silicon | 支持从源码运行，见 [Mac 安装说明](docs/MACOS.md)；暂未提供便携包 |
 | X2D II 1.2.7.16 | 原厂 UI、主菜单和 Display 子菜单已验证 |
 | X2D II 1.3.16.2 | 见[验证记录](docs/VERIFICATION.md) |
 | 其他固件 | 未验证的完整文件会被拒绝 |
@@ -64,6 +65,12 @@ cd Hasselblad-X2D-II-QEMU-DevKit
 ```
 
 用户数据默认在 `%LOCALAPPDATA%\X2DII-DevKit`。可以通过 `X2DII_DEVKIT_HOME` 环境变量或 `--home <目录>` 改位置；路径不要含英文逗号。固件、解包文件、运行时、日志和个人开发目录不提交到 Git。
+
+在 Apple Silicon Mac 上，按[Mac 安装说明](docs/MACOS.md)准备 QEMU 和 Android 镜像，然后运行：
+
+```sh
+./Launch.sh --home "$HOME/Library/Application Support/X2DII-DevKit"
+```
 
 ## 致谢和许可证
 

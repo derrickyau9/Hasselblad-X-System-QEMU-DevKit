@@ -2,6 +2,7 @@
 from pathlib import Path
 import hashlib
 import os
+import sys
 import shutil
 import tempfile
 import urllib.request
@@ -9,6 +10,17 @@ import zipfile
 from .core import ASSETS, Task, checked_child, read_json, write_json
 
 MANIFEST = read_json(ASSETS / "downloads.json")
+
+def _host_binary(name):
+    """Return the executable name used by the current host."""
+    return name + '.exe' if os.name == 'nt' else name
+
+def _default_sdk_root():
+    if os.name == 'nt':
+        return Path(os.environ.get('LOCALAPPDATA', Path.home())) / 'Android/Sdk'
+    if sys.platform == 'darwin':
+        return Path.home() / 'Library/Android/sdk'
+    return Path.home() / 'Android/Sdk'
 
 def checksum(path, algorithm):
     h = hashlib.new(algorithm)
@@ -65,7 +77,7 @@ def unzip(source, destination, task):
                     shutil.copyfileobj(src, dest, 1024**2)
 
 def validate(config):
-    required = [Path(config['qemu']) / n for n in ('qemu-system-aarch64.exe', 'qemu-img.exe', 'qemu-io.exe')]
+    required = [Path(config['qemu']) / _host_binary(n) for n in ('qemu-system-aarch64', 'qemu-img', 'qemu-io')]
     required += [Path(config['image']) / n for n in ('kernel-ranchu', 'system.img', 'vendor.img', 'encryptionkey.img')]
     required.append(Path(config['mke2fs']))
     missing = [p.name for p in required if not p.is_file()]
@@ -83,17 +95,34 @@ def discover(home):
             return validate(configured)
         except (KeyError, ValueError, FileNotFoundError):
             pass
-    sdk = Path(os.environ.get('ANDROID_SDK_ROOT', os.environ.get('ANDROID_HOME', str(Path(os.environ.get('LOCALAPPDATA', Path.home())) / 'Android/Sdk'))))
-    qemu = shutil.which('qemu-system-aarch64.exe')
+    sdk = Path(os.environ.get('ANDROID_SDK_ROOT', os.environ.get('ANDROID_HOME', str(_default_sdk_root()))))
+    qemu = shutil.which(_host_binary('qemu-system-aarch64'))
     if qemu:
         try:
-            return validate({'qemu': str(Path(qemu).parent), 'image': str(sdk / 'system-images/android-28/default/arm64-v8a'), 'mke2fs': str(sdk / 'platform-tools/mke2fs.exe')})
+            mke2fs = shutil.which(_host_binary('mke2fs')) or str(sdk / 'platform-tools' / _host_binary('mke2fs'))
+            return validate({'qemu': str(Path(qemu).parent), 'image': str(sdk / 'system-images/android-28/default/arm64-v8a'), 'mke2fs': mke2fs})
         except (ValueError, FileNotFoundError):
             pass
     return None
 
 def setup(home, task=None):
     task = task or Task()
+    if os.name != 'nt':
+        qemu = shutil.which(_host_binary('qemu-system-aarch64'))
+        qemu_img = shutil.which(_host_binary('qemu-img'))
+        qemu_io = shutil.which(_host_binary('qemu-io'))
+        mke2fs = shutil.which(_host_binary('mke2fs'))
+        sdk = Path(os.environ.get('ANDROID_SDK_ROOT', os.environ.get('ANDROID_HOME', str(_default_sdk_root()))))
+        image = sdk / 'system-images/android-28/default/arm64-v8a'
+        if not all((qemu, qemu_img, qemu_io, mke2fs)):
+            raise FileNotFoundError('Install QEMU and mke2fs first (for example: brew install qemu e2fsprogs).')
+        if not image.is_dir():
+            raise FileNotFoundError(f'Android ARM64 API 28 image not found: {image}. Install it with sdkmanager or set ANDROID_SDK_ROOT.')
+        config = {'qemu': str(Path(qemu).parent), 'image': str(image), 'mke2fs': str(mke2fs)}
+        validate(config)
+        write_json(home / 'runtime.json', config)
+        task.report('Runtime ready / 运行环境准备完成')
+        return config
     root, cache = home / 'runtime', home / 'downloads'
     root.mkdir(parents=True, exist_ok=True)
     # Each component is promoted only after a successful extraction.

@@ -1,6 +1,6 @@
 # Hasselblad X2D II QEMU DevKit
 
-**A native Windows workbench for exploring the original X2D II interface and developing guest apps.**
+**A Windows workbench, with a source-run macOS ARM64 path, for exploring the original X2D II interface and developing guest apps.**
 
 [简体中文](README.zh-CN.md) · [Download Windows app](https://github.com/derrickyau9/Hasselblad-X2D-II-QEMU-DevKit/releases/latest) · [Official firmware](https://www.hasselblad.com/x-system/firmware/)
 
@@ -30,6 +30,7 @@ Initial runtime download: approximately **615 MB**. Allow **8 GB free disk space
 | Item | Status |
 | --- | --- |
 | Windows x64 host | Supported; portable Qt application |
+| macOS Apple Silicon | Supported from source after the macOS setup in [docs/MACOS.md](docs/MACOS.md); no portable package yet |
 | X2D II 1.2.7.16 | Original UI, menu navigation and Display submenu verified |
 | X2D II 1.3.16.2 | See [verification record](docs/VERIFICATION.md) |
 | Other firmware | Rejected until its exact package is validated |
@@ -75,6 +76,12 @@ python -m venv .venv
 ```
 
 Data lives in `%LOCALAPPDATA%\X2DII-DevKit`. Set `X2DII_DEVKIT_HOME` or pass `--home <directory>` for a different location. Avoid commas in runtime/data paths. Firmware files, extracted assets, runtime downloads, logs and user workspaces are excluded from Git.
+
+On macOS Apple Silicon, use the source launcher after completing the [macOS setup](docs/MACOS.md):
+
+```sh
+./Launch.sh --home "$HOME/Library/Application Support/X2DII-DevKit"
+```
 
 ## Credits and licensing
 

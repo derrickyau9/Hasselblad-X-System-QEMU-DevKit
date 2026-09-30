@@ -1,9 +1,10 @@
-"""Native Windows Qt workbench, with Material surfaces from Infotainment Lab."""
+"""Native Qt workbench, with Material surfaces from Infotainment Lab."""
 from pathlib import Path
 import argparse
 import json
 import locale
 import os
+import platform
 import shutil
 import struct
 import sys
@@ -135,7 +136,8 @@ class Window(QMainWindow):
             side.addWidget(b); self.nav.append(b)
         side.addStretch()
         side.addWidget(self.label('LOCAL WORKBENCH', '本地开发环境', 'eyebrow'))
-        side.addWidget(self.label('ARM64 · Software rendering\nWindows x64 · v0.1.0', 'ARM64 · 软件渲染\nWindows x64 · v0.1.0', 'muted'))
+        host_label = 'macOS ARM64' if sys.platform == 'darwin' and platform.machine() == 'arm64' else ('macOS' if sys.platform == 'darwin' else 'Windows x64')
+        side.addWidget(self.label(f'ARM64 · Software rendering\n{host_label} · v0.1.0', f'ARM64 · 软件渲染\n{host_label} · v0.1.0', 'muted'))
         self.official = self.button('Get official firmware ↗', '下载官方固件 ↗', lambda: QDesktopServices.openUrl(QUrl('https://www.hasselblad.com/x-system/firmware/')))
         side.addWidget(self.official)
         row.addWidget(sidebar); row.addWidget(self.pages, 1)
@@ -224,7 +226,7 @@ class Window(QMainWindow):
         row = QHBoxLayout(); row.addWidget(self.button('Open logs folder', '打开日志目录', self.open_device)); row.addWidget(self.button('Clear view', '清空显示', self.logs.clear)); row.addStretch(); layout.addLayout(row)
 
     def make_settings(self):
-        layout = self.page('Make it yours.', '设置你的工作环境。', 'Native Qt on Windows. No WSL or administrator privileges required.', 'Windows 原生 Qt，无需 WSL 或管理员权限。')
+        layout = self.page('Make it yours.', '设置你的工作环境。', 'Native Qt on your desktop. No WSL or administrator privileges required.', '桌面原生 Qt，无需 WSL 或管理员权限。')
         card = self.card(layout); card.addWidget(self.label('Appearance', '外观', 'subtitle'))
         row = QHBoxLayout(); self.language = QComboBox(); self.language.addItems(['English', '简体中文']); self.language.setCurrentIndex(int(self.lang == 'zh'))
         self.language.currentIndexChanged.connect(self.change_language); row.addWidget(self.language)

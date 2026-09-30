@@ -6,6 +6,15 @@ from pyfdt.pyfdt import FdtBlobParse, FdtNode, FdtPropertyStrings
 from .gpt import patched_chunks
 from ..core import Task, write_json, read_json
 
+def _qemu(qemu, name):
+    path = qemu / name
+    if path.exists():
+        return path
+    windows = qemu / (name + '.exe')
+    if windows.exists():
+        return windows
+    return path
+
 def prepare(device, runtime, task=None):
     task = task or Task()
     image, qemu = Path(runtime['image']), Path(runtime['qemu'])
@@ -17,7 +26,7 @@ def prepare(device, runtime, task=None):
         raise ValueError('Runtime location changed. Restore the previous runtime path or import into a new DevKit data directory.')
     if not (device / 'android-virt.dtb').exists():
         base = device / 'virt.dtb'
-        task.run([qemu / 'qemu-system-aarch64.exe', '-machine', f'virt,dumpdtb={base}', '-cpu', 'cortex-a57', '-display', 'none'])
+        task.run([_qemu(qemu, 'qemu-system-aarch64'), '-machine', f'virt,dumpdtb={base}', '-cpu', 'cortex-a57', '-display', 'none'])
         with base.open('rb') as stream:
             tree = FdtBlobParse(stream).to_fdt()
         firmware, android, fstab, vendor = [FdtNode(n) for n in ('firmware', 'android', 'fstab', 'vendor')]
@@ -35,9 +44,9 @@ def prepare(device, runtime, task=None):
         if output.exists():
             continue
         temporary = device / f'{kind}-name.partial.qcow2'
-        task.run([qemu / 'qemu-img.exe', 'create', '-q', '-f', 'qcow2', '-F', 'raw', '-b', image / f'{kind}.img', temporary])
+        task.run([_qemu(qemu, 'qemu-img'), 'create', '-q', '-f', 'qcow2', '-F', 'raw', '-b', image / f'{kind}.img', temporary])
         with tempfile.TemporaryDirectory(prefix='gpt-', dir=device) as temp:
-            args = [qemu / 'qemu-io.exe', '-f', 'qcow2']
+            args = [_qemu(qemu, 'qemu-io'), '-f', 'qcow2']
             for n, (offset, chunk) in enumerate(patched_chunks(image / f'{kind}.img', label)):
                 path = Path(temp) / f'patch-{n}.bin'
                 path.write_bytes(chunk)
@@ -56,7 +65,7 @@ def prepare(device, runtime, task=None):
 
 def command(device, runtime, console_port, input_port, frame_port):
     image, qemu = Path(runtime['image']), Path(runtime['qemu'])
-    args = [str(qemu / 'qemu-system-aarch64.exe'), '-machine', 'virt', '-cpu', 'cortex-a57',
+    args = [str(_qemu(qemu, 'qemu-system-aarch64')), '-machine', 'virt', '-cpu', 'cortex-a57',
             '-m', '2048', '-smp', '2', '-accel', 'tcg,thread=multi,tb-size=512', '-display', 'none',
             '-monitor', 'none', '-no-reboot', '-nic', 'none',
             '-serial', f'tcp:127.0.0.1:{console_port},server=on,wait=off',

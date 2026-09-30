@@ -61,7 +61,7 @@ class Session(QThread):
             errors = (self.device / 'qemu.log').open('wb')
             log = (self.device / 'console.log').open('wb')
             process = self.process = subprocess.Popen(command(self.device, self.runtime, *ports), stdout=errors,
-                        stderr=errors, creationflags=subprocess.CREATE_NO_WINDOW)
+                        stderr=errors, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
             for attempt in range(100):
                 self.task.check()
                 try:

@@ -16,8 +16,10 @@ p.add_argument('--app', action='store_true')
 p.add_argument('--device', help='Imported firmware SHA256 prefix')
 args = p.parse_args()
 app = QApplication([])
-for font in ('segoeui.ttf', 'segoeuil.ttf', 'msyh.ttc'):
-    QFontDatabase.addApplicationFont(str(Path(os.environ['WINDIR']) / 'Fonts' / font))
+font_root = Path(os.environ['WINDIR']) / 'Fonts' if os.environ.get('WINDIR') else None
+if font_root:
+    for font in ('segoeui.ttf', 'segoeuil.ttf', 'msyh.ttc'):
+        QFontDatabase.addApplicationFont(str(font_root / font))
 w = Window(args.home.resolve())
 if args.device:
     w.refresh_library(args.home.resolve() / 'library' / args.device)
