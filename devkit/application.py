@@ -20,6 +20,7 @@ from .firmware import import_firmware, TESTED_VERSION
 from .runtime import discover, setup
 from .development import workspace, build, find_ndk
 from .session import Session
+from .models import MODELS, model_id, available_models
 from .theme import apply_theme, current_colors
 
 class Job(QThread):
@@ -47,8 +48,9 @@ class Screen(QWidget):
         self.setMinimumSize(480, 360)
         self.setSizePolicy(self.sizePolicy().Policy.Expanding, self.sizePolicy().Policy.Expanding)
     def bounds(self):
-        scale = min(self.width()/1024, self.height()/768)
-        w, h = 1024*scale, 768*scale
+        fw, fh = (self.frame.width(),self.frame.height()) if self.frame is not None else (1024,768)
+        scale = min(self.width()/fw, self.height()/fh)
+        w, h = fw*scale, fh*scale
         return QRectF((self.width()-w)/2, (self.height()-h)/2, w, h)
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -68,8 +70,9 @@ class Screen(QWidget):
         r = self.bounds(); p = event.position()
         if operation == 'down' and not r.contains(p):
             return
-        x = max(0, min(1023, int((p.x()-r.x())*1024/r.width())))
-        y = max(0, min(767, int((p.y()-r.y())*768/r.height())))
+        fw, fh = (self.frame.width(),self.frame.height()) if self.frame is not None else (1024,768)
+        x = max(0, min(fw-1, int((p.x()-r.x())*fw/r.width())))
+        y = max(0, min(fh-1, int((p.y()-r.y())*fh/r.height())))
         self.touch.emit(operation, x, y)
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton and self.bounds().contains(event.position()):
@@ -142,7 +145,7 @@ class Window(QMainWindow):
         side.addStretch()
         side.addWidget(self.label('LOCAL WORKBENCH', '本地开发环境', 'eyebrow'))
         host_label = 'macOS ARM64' if sys.platform == 'darwin' and platform.machine() == 'arm64' else ('macOS' if sys.platform == 'darwin' else 'Windows x64')
-        side.addWidget(self.label(f'ARM64 · Software rendering\n{host_label} · v0.1.1', f'ARM64 · 软件渲染\n{host_label} · v0.1.1', 'muted'))
+        side.addWidget(self.label(f'ARM32 / ARM64 · Software rendering\n{host_label} · v0.2.0', f'ARM32 / ARM64 · 软件渲染\n{host_label} · v0.2.0', 'muted'))
         self.official = self.button('Get official firmware ↗', '下载官方固件 ↗', lambda: QDesktopServices.openUrl(QUrl('https://www.hasselblad.com/x-system/firmware/')))
         side.addWidget(self.official)
         row.addWidget(sidebar); row.addWidget(self.pages, 1)
@@ -178,7 +181,7 @@ class Window(QMainWindow):
             'Bring your own firmware. Explore the original interface in a local QEMU guest.', '导入官方固件，在本地 QEMU 虚拟机中探索原厂界面。')
         self.drop = DropArea('', '')
         self.bind(self.drop.title.setText, '↓  Drop official firmware here', '↓  将官方固件拖到这里')
-        self.bind(self.drop.caption.setText, '.cim · Click to browse · 1.2.7.16 / 1.3.16.2', '.cim · 点击选择文件 · 1.2.7.16 / 1.3.16.2')
+        self.bind(self.drop.caption.setText, '.cim · X1D / X1D II / X2D / X2D II / 907X 50C', '.cim · X1D / X1D II / X2D / X2D II / 907X 50C')
         self.drop.clicked.connect(self.browse); self.drop.dropped.connect(self.import_file); layout.addWidget(self.drop)
         content = QHBoxLayout(); content.setSpacing(16); layout.addLayout(content, 1)
         list_card = QFrame(); list_card.setObjectName('card'); list_card.setFixedWidth(242)
@@ -186,6 +189,7 @@ class Window(QMainWindow):
         left.addWidget(self.label('FIRMWARE LIBRARY', '固件库', 'eyebrow'))
         self.library = QListWidget(); self.library.currentRowChanged.connect(self.select_device); left.addWidget(self.library, 1)
         self.details = QLabel(); self.details.setWordWrap(True); self.details.setObjectName('muted'); left.addWidget(self.details)
+        self.model_choice = QComboBox(); self.model_choice.currentIndexChanged.connect(self.select_model); left.addWidget(self.model_choice)
         self.folder = self.button('Open files', '打开文件目录', self.open_device); left.addWidget(self.folder)
         content.addWidget(list_card)
         preview = QFrame(); preview.setObjectName('card'); right = QVBoxLayout(preview); right.setContentsMargins(16, 14, 16, 16)
@@ -193,6 +197,13 @@ class Window(QMainWindow):
         self.badge = QLabel(); self.badge.setObjectName('badge'); header.addWidget(self.badge); right.addLayout(header)
         self.screen = Screen(); self.screen.touch.connect(self.send_touch); right.addWidget(self.screen, 1)
         right.addWidget(self.label('Click to tap · Drag to swipe · Camera data is simulated', '鼠标点击 = 触控 · 拖动 = 滑动 · 相机数据为模拟值', 'muted'))
+        key_row = QHBoxLayout(); self.camera_keys = []
+        for i in range(1,6):
+            key = QPushButton(f'F{i}')
+            key.pressed.connect(lambda i=i:self.send_touch('key',58+i,1))
+            key.released.connect(lambda i=i:self.send_touch('key',58+i,0))
+            self.camera_keys.append(key); key_row.addWidget(key)
+        key_row.addStretch(); right.addLayout(key_row)
         buttons = QHBoxLayout()
         self.start = self.button('Start original UI', '启动原厂 UI', self.launch, True)
         self.stop = self.button('Stop', '停止', self.stop_session)
@@ -201,15 +212,15 @@ class Window(QMainWindow):
         content.addWidget(preview, 1)
 
     def make_development(self):
-        layout = self.page('Build something for X2D II.', '为 X2D II 开发应用。',
-            'An editable ARM64 Wayland example, isolated from your physical camera.', '从可编辑的 ARM64 Wayland 示例开始，在虚拟机中运行。')
+        layout = self.page('Develop for your camera.', '为选中的机型开发应用。',
+            'Build and run a Wayland example for the selected firmware.', '按所选固件的架构编译 Wayland 示例，在虚拟机中运行。')
         card = self.card(layout)
         card.addWidget(self.label('01  Create your workspace', '01  创建开发工作区', 'subtitle'))
         card.addWidget(self.label('Create hello.c and a guide for the selected firmware. Existing edits are preserved.', '为选中的固件创建 hello.c 和开发说明，保留已有修改。', 'muted'))
         card.addWidget(self.button('Open development workspace', '打开开发工作区', self.open_workspace))
         card = self.card(layout)
         card.addWidget(self.label('02  Build and run', '02  编译并运行', 'subtitle'))
-        card.addWidget(self.label('Use Android NDK r27 for the ARM64/Bionic target. The runtime itself does not require the NDK.', '使用 Android NDK r27 编译 ARM64/Bionic 程序；仅运行原厂 UI 不需要 NDK。', 'muted'))
+        card.addWidget(self.label('Use NDK r27 clang. The build selects Android ARM32, ARM64, or Linux ARMhf automatically.', '使用 NDK r27 的 clang，自动选择 Android ARM32、ARM64 或 Linux ARMhf；仅运行 UI 不需要 NDK。', 'muted'))
         ndk_row = QHBoxLayout(); self.ndk = QLineEdit(str(find_ndk() or self.preferences.get('ndk', '')))
         self.ndk.setPlaceholderText('Android NDK folder'); ndk_row.addWidget(self.ndk, 1)
         ndk_row.addWidget(self.button('Browse…', '选择…', self.choose_ndk)); card.addLayout(ndk_row)
@@ -219,7 +230,7 @@ class Window(QMainWindow):
         card.addWidget(self.button('Download Android NDK ↗', '下载 Android NDK ↗', lambda: QDesktopServices.openUrl(QUrl('https://developer.android.com/ndk/downloads'))))
         card = self.card(layout)
         card.addWidget(self.label('What this environment provides', '开发环境能力', 'subtitle'))
-        card.addWidget(self.label('Original Qt UI + a minimal Wayland compositor + mocked camera services. The included C app uses shared memory. Custom Qt guest apps require a compatible Android ARM64 Qt toolchain.', '原厂 Qt UI、精简 Wayland 合成器和模拟相机服务。附带的 C 示例使用共享内存绘制；自定义 Qt 应用另需兼容的 Android ARM64 Qt 工具链。', 'muted'))
+        card.addWidget(self.label('Original Qt UI + a minimal Wayland compositor + mocked camera services. The included C app uses shared memory. Custom Qt apps need a toolchain matching the selected firmware’s ABI.', '原厂 Qt UI、精简 Wayland 合成器和模拟相机服务。附带的 C 示例使用共享内存绘制；自定义 Qt 应用另需与所选固件 ABI 匹配的工具链。', 'muted'))
         layout.addStretch()
 
     def make_console(self):
@@ -242,7 +253,7 @@ class Window(QMainWindow):
         card = self.card(layout); card.addWidget(self.label('Runtime', '运行环境', 'subtitle'))
         self.runtime_label = QLabel(); self.runtime_label.setWordWrap(True); self.runtime_label.setObjectName('muted'); card.addWidget(self.runtime_label)
         self.setup_button = self.button('Set up runtime', '安装运行环境', self.install_runtime, True); card.addWidget(self.setup_button)
-        card.addWidget(self.label('First setup downloads about 615 MB from official sources. Reserve 8 GB of free space. CPU emulation and Qt software rendering are used; GPU acceleration is unavailable in this ARM64 guest.', '首次安装从官方来源下载约 615 MB，请预留 8 GB 空间。当前使用 CPU 模拟与 Qt 软件渲染，此 ARM64 环境尚未提供 GPU 加速。', 'muted'))
+        card.addWidget(self.label('Base setup downloads about 615 MB; X1D adds about 78 MB of Linux libraries. Reserve 8 GB, or 12 GB for X1D, plus space for each firmware. CPU emulation and Qt software rendering are used; GPU acceleration is unavailable in this ARM64 guest.', '基础环境下载约 615 MB，X1D 另需约 78 MB Linux 运行库。请预留 8 GB，X1D 建议 12 GB，多份固件需额外空间。当前使用 CPU 模拟与 Qt 软件渲染，此 ARM64 环境尚未提供 GPU 加速。', 'muted'))
         card.addWidget(self.button('Open DevKit data folder', '打开 DevKit 数据目录', lambda: self.open_path(self.home)))
         card = self.card(layout); card.addWidget(self.label('Credits & scope', '致谢与范围', 'subtitle'))
         card.addWidget(self.label('Material theme adapted from Derrick Yao’s tsla-infotainment-lab (MIT). Powered by QEMU, Android, Qt for Python and 7-Zip. Firmware is supplied by you and remains local. Unaffiliated with Hasselblad.', 'Material 主题改编自 Derrick Yao 的 tsla-infotainment-lab（MIT）。基于 QEMU、Android、Qt for Python 和 7-Zip。固件由你提供并保留在本地。本项目与哈苏无隶属关系。', 'muted'))
@@ -309,7 +320,7 @@ class Window(QMainWindow):
         self.library.blockSignals(True); self.library.clear()
         selected = 0
         for i, path in enumerate(self.devices):
-            data = read_json(path); self.library.addItem(f"X2D II 100C\n{data['version']}")
+            data = read_json(path); self.library.addItem(f"{data['name']}\n{data['version']}")
             if select and path.parent == select: selected = i
         self.library.blockSignals(False)
         self.library.setCurrentRow(selected if self.devices else -1)
@@ -317,6 +328,20 @@ class Window(QMainWindow):
     def select_device(self, index):
         self.device = self.devices[index].parent if 0 <= index < len(self.devices) else None
         self.screen.frame = None; self.screen.update(); self.last_frame = None
+        self.model_choice.blockSignals(True); self.model_choice.clear()
+        if self.device:
+            profile = read_json(self.device / 'device.json')
+            for model in available_models(profile): self.model_choice.addItem(MODELS[model]['label'],model)
+            self.model_choice.setCurrentIndex(self.model_choice.findData(model_id(profile)))
+        self.model_choice.blockSignals(False)
+        self.update_controls()
+    def select_model(self,index):
+        if not self.device or self.busy(): return
+        profile = read_json(self.device / 'device.json')
+        selected = self.model_choice.itemData(index)
+        if selected not in available_models(profile): return
+        profile['model'] = selected
+        write_json(self.device / 'device.json',profile)
         self.update_controls()
     def launch(self, checked=False, mode='live'):
         if self.busy() or not self.device: return
@@ -360,6 +385,8 @@ class Window(QMainWindow):
         busy = self.busy(); live = bool(self.session and self.session.isRunning()); ready = bool(live and self.session.ready)
         self.start.setEnabled(bool(self.device) and not busy); self.stop.setEnabled(live)
         self.library.setEnabled(not busy); self.drop.setEnabled(not busy); self.folder.setEnabled(bool(self.device))
+        self.model_choice.setEnabled(not busy and self.model_choice.count()>1)
+        for key in self.camera_keys: key.setEnabled(ready)
         self.build_button.setEnabled(bool(self.device) and not busy); self.app_button.setEnabled(bool(self.device) and not busy)
         self.setup_button.setEnabled(not busy); self.send_button.setEnabled(ready); self.command.setEnabled(ready)
         self.shot.setEnabled(self.screen.frame is not None)
@@ -372,7 +399,12 @@ class Window(QMainWindow):
         if live and not ready: self.screen.caption = self.tr('Starting the ARM64 guest…', '正在启动 ARM64 虚拟机…')
         self.screen.update()
         self.runtime_label.setText(self.tr('Runtime ready · QEMU + Android ARM64', '运行环境已就绪 · QEMU + Android ARM64') if self.runtime else self.tr('Runtime not installed. Setup runs once, then works offline.', '尚未安装运行环境，安装一次后可离线使用。'))
-        self.details.setText(self.tr('Verified firmware\n1024 × 768 · ARM64\nOriginal UI + mock services', '已验证固件\n1024 × 768 · ARM64\n原厂 UI + 模拟服务') if self.device else self.tr('Your imported firmware will appear here.', '导入的固件会显示在这里。'))
+        if self.device:
+            profile = read_json(self.device / 'device.json'); model = model_id(profile)
+            status = self.tr('UI verified','UI 已验证') if profile.get('validated') and model == 'x2dii' else self.tr('UI development preview','UI 开发预览')
+            self.details.setText(f"{status}\n{MODELS[model]['abi']} · {profile['version']}")
+            self.screen.message = MODELS[model]['label'].removeprefix('Hasselblad ')
+        else: self.details.setText(self.tr('Your imported firmware will appear here.', '导入的固件会显示在这里。'))
     def log(self, message):
         if message.strip():
             self.logs.appendPlainText(message); self.statusBar().showMessage(message.splitlines()[-1][:180])

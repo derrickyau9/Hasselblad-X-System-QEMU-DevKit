@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 import shutil
 import sys
-from .core import ASSETS, Task, GuestLock
+from .core import ASSETS, Task, GuestLock, read_json
 
 def workspace(device):
     root = device / 'workspace'
@@ -40,11 +40,23 @@ def build(device, ndk, task=None):
         raise FileNotFoundError('Select an Android NDK folder containing toolchains/llvm (r27 validated)')
     output = device / 'payload-stage/app'
     output.mkdir(exist_ok=True)
-    task.report('Compiling ARM64 app / 编译 ARM64 应用…')
+    abi=read_json(device/'device.json').get('abi','arm64')
+    task.report(f'Compiling / 编译: {abi}')
     # clang.exe avoids cmd.exe string interpolation for paths supplied by users.
     with GuestLock(device):
-        task.run([compiler, '--target=aarch64-linux-android28', '-O2', '-fPIE', '-pie', root / 'hello.c',
-                  '-o', output / 'hello.new', '-L' + str(device / 'payload-stage/camera/lib'), '-lwayland-client'])
+        if abi=='linux-arm32':
+            from .linux_runtime import setup_linux
+            sysroot=setup_linux(device,task);libs=sysroot/'usr/lib/arm-linux-gnueabihf'
+            task.run([compiler,'--target=arm-linux-gnueabihf',f'--sysroot={sysroot}',
+                      '-isystem',sysroot/'usr/include/arm-linux-gnueabihf','-O2','-fPIE','-pie','-fuse-ld=lld','-nostdlib',
+                      libs/'Scrt1.o',libs/'crti.o',root/'hello.c','-L'+str(libs),'-L'+str(sysroot/'lib/arm-linux-gnueabihf'),
+                      '-Wl,-dynamic-linker,/lib/ld-linux-armhf.so.3','-Wl,--allow-shlib-undefined',
+                      '-l:libwayland-client.so.0','-l:libc.so.6','-l:libgcc_s.so.1','-l:libc_nonshared.a',libs/'crtn.o',
+                      '-o',output/'hello.new'])
+        else:
+            target='armv7a-linux-androideabi23' if abi=='arm32' else 'aarch64-linux-android28'
+            task.run([compiler, '--target='+target, '-O2', '-fPIE', '-pie', root / 'hello.c',
+                      '-o', output / 'hello.new', '-L' + str(device / 'payload-stage/camera/lib'), '-lwayland-client'])
         (output / 'hello.new').replace(output / 'hello')
     task.report('Build successful / 编译成功')
     return output / 'hello'

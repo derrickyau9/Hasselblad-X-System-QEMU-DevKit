@@ -146,8 +146,11 @@ def decrypt_private_area(raw: bytes, iv: bytes = ZERO_IV) -> bytes:
 
 
 def derive_iv_from_items(raw: bytes, items: list[dict[str, Any]]) -> bytes:
+    legacy_linux = parse_public_header(raw)['product'] == '1601254_PVF'
     for item in items:
         known = KNOWN_COMPONENT_FIRST_BLOCKS.get(item["name"])
+        if legacy_linux and item['name'] == 'hbl-upgrade':
+            known = b'#!/bin/sh\n\nKERNE'
         if not known:
             continue
         start = item["offset_in_cim"]

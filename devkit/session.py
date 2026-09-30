@@ -7,9 +7,10 @@ import socket
 import subprocess
 import time
 from PySide6.QtCore import QThread, Signal
-from .core import ASSETS, Task, Cancelled, GuestLock
+from .core import ASSETS, Task, Cancelled, GuestLock, read_json
 from .guest.prepare import prepare, command
 from .guest.frame_stream import FrameStream
+from .models import model_id
 
 class Session(QThread):
     message = Signal(str)
@@ -44,9 +45,19 @@ class Session(QThread):
         try:
             self.phase.emit('starting')
             lock = GuestLock(self.device)
-            (self.device / 'payload-stage/camera/run.sh').write_bytes((ASSETS / 'guest/camera_run.sh').read_bytes().replace(b'\r\n', b'\n'))
-            for name in ('mini_compositor', 'mock_services', 'dbus_launcher'):
-                shutil.copy2(ASSETS / 'helpers' / name, self.device / 'payload-stage' / name)
+            profile = read_json(self.device / 'device.json')
+            legacy = profile.get('abi') == 'linux-arm32'
+            run_script = 'legacy_run.sh' if legacy else 'camera_run.sh'
+            (self.device / 'payload-stage/camera/run.sh').write_bytes((ASSETS / 'guest' / run_script).read_bytes().replace(b'\r\n', b'\n'))
+            if legacy:
+                from .linux_runtime import setup_linux
+                setup_linux(self.device,self.task)
+                (self.device / 'payload-stage/camera/linux_ui.sh').write_bytes((ASSETS / 'guest/linux_ui.sh').read_bytes().replace(b'\r\n', b'\n'))
+            helper_dir = ASSETS / 'helpers' / profile['abi'] if profile.get('abi') in ('arm32','linux-arm32') else ASSETS / 'helpers'
+            for name in (('mini_compositor', 'mock_services') if legacy else ('mini_compositor', 'mock_services', 'dbus_launcher')):
+                shutil.copy2(helper_dir / name, self.device / 'payload-stage' / name)
+            if profile.get('abi') == 'arm32':
+                shutil.copy2(helper_dir / 'ion_compat.so', self.device / 'payload-stage/ion_compat.so')
             prepare(self.device, self.runtime, self.task)
             with (self.device / 'framebuffer.raw').open('wb') as f:
                 f.truncate(32*1024**2)
@@ -119,12 +130,12 @@ class Session(QThread):
             self.message.emit('Booting Android ARM64 guest / 启动 ARM64 虚拟机…')
             until(b'console:/ $', 90)
             send('su 0'); until(b'console:/ #', 15)
-            for line in ['dmesg -n 1', 'stop surfaceflinger', 'stop vendor.hwcomposer-2-1',
+            for line in ['dmesg -n 1', 'stop zygote', 'stop zygote_secondary', 'stop surfaceflinger', 'stop vendor.hwcomposer-2-1',
                          'mkdir -p /mnt/x2dii', 'mount -t vfat /dev/block/vde1 /mnt/x2dii']:
                 send(line); until(b'console:/ #', 15)
             self.message.emit('Starting guest app / 启动应用…' if self.mode == 'app' else 'Starting original camera UI / 启动原厂界面…')
-            send(f'sh /mnt/x2dii/camera/run.sh {self.mode} &')
-            until(b'X2DII_UI_SESSION_READY', 150)
+            send(f'sh /mnt/x2dii/camera/run.sh {self.mode} {model_id(profile)} &')
+            until(b'X2DII_UI_SESSION_READY', 300 if legacy else 150)
             deadline = time.monotonic() + 30
             while frames.latest is None and time.monotonic() < deadline:
                 self.task.check(); received()
@@ -153,6 +164,8 @@ class Session(QThread):
                     while b'\n' in console_pending:
                         line, _, rest = console_pending.partition(b'\n')
                         console_pending[:] = rest
+                        if b'X2DII_UI_EXITED' in line:
+                            raise RuntimeError('Guest UI exited; see console.log')
                         self.console.emit(line.decode(errors='replace').rstrip())
                     if len(console_pending) > 65536:
                         self.console.emit(console_pending.decode(errors='replace'))

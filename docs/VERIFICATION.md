@@ -46,3 +46,27 @@ No input-to-display latency or FPS guarantee is made.
 中文摘要：两个官方固件版本均从 `.cim` 导入并实际启动过原厂界面，点击进入
 Display 子菜单；1.3.16.2 还验证了 NDK 编译示例并在虚拟机显示。23 项自动测试
 通过。相机实机功能、硬件加速和其他固件版本未验证。
+
+## Multi-model preview — 2026-09-30
+
+The Windows source build imports 14 distinct known package hashes (the X1D II and CFV II 1.5.2 downloads share one hash). Each input is supplied by the user. This adds no physical-camera control.
+
+| Profile | Versions | Checks |
+| --- | --- | --- |
+| X1D 50C | 1.20.0, 1.21.0, 1.25.0 | Legacy CIM/rootfs import, original UI in Linux ARMhf/Qt 5.15, 640×480 main menu, virtual F1; General Settings navigation on 1.21.0 and 1.25.0 |
+| X1D II 50C | 1.0.1, 1.0.2, 1.1.0, 1.2.0, 1.3.0, 1.4.0, 1.5.2 | Raw Android OTA import, ARM32 UI, upward swipe to main menu, mouse tap to camera settings |
+| X2D 100C | 1.0.5, 4.2.0 | Original UI with X2D identity `4.1.0`, Power / Display submenu navigation |
+| 907X / CFV II 50C | 1.5.2 | Shared-package model selection, CFV identity `14.1.0`, main menu and Focus settings page |
+| X2D II 100C | 1.3.16.2 | Regression check after adding multi-model support; prior 1.2.7.16 evidence remains above |
+
+Three separately compiled Hello clients were run and visually checked: Android ARM32 with 1.5.2, Android ARM64 with X2D 4.2.0, and Linux ARMhf with X1D 1.25.0. The demonstration still draws `HELLO X2D`; it is not a device identity test.
+
+38 host unit tests pass. Added cases cover legacy versus Android CIM IV derivation, shared-package model selection, kernel identity and isolated Linux disk selection, bounded legacy QML adaptation and Linux archive path validation. Linux runtime reconstruction from the pinned cached Debian packages was also exercised.
+
+During verification, earlier Eagle buffers required a byte-stride adapter. Later image review also exposed partial repaint loss: the compositor now retains unchanged pixels, applies Wayland damage regions, and presents committed buffers before releasing them and completing frame callbacks on a 16 ms display tick. Delaying callbacks alone was insufficient. Pending releases follow Wayland resource destruction so a destroyed buffer is not used later, and repeated commits of a pending buffer accumulate their damage. X1D 1.21.0 and X1D II 1.0.2 / 1.4.0 were additionally observed through repeated captures for 34 seconds after readiness, including settings-page interactions. Blank-frame rejection alone is insufficient; retained screenshots were reviewed for complete menus. The original X1D QML root-window adaptation changes a compressed data resource, without altering ELF instructions. `.text` and `.plt` compare byte for byte for all 14 imported profiles.
+
+The Windows portable EXE was also checked: a fresh data directory imported CFV II 1.5.2 and displayed the 907X main menu; the Linux path displayed the X1D 1.25.0 main menu. Both recorded `frozen: true`.
+
+The launcher allows the opening menu transition and asynchronous loaders to settle before readiness. Menu filtering also needs a synthetic body type: firmware Qt metadata defines Xsystem as `1024` and Cfv907x as `1048576`, rather than sequential enum values. The mock supplies these masks to `Seq`, with the GUI exposure capability, while hardware methods remain unsupported. X1D II 1.3.0 Quality and 907X Focus pages were checked after this change.
+
+The firmware/UI ABI paths were tested on Windows. The additional models have not been verified on macOS. No 907X / CFV 100C image was supplied; that model is unsupported. Hardware operations, all menu values, settings persistence, and physical camera behavior remain outside these checks. There is no GPU acceleration claim.

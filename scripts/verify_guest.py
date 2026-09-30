@@ -13,7 +13,11 @@ from devkit.application import Window
 p = argparse.ArgumentParser()
 p.add_argument('--home', type=Path, required=True)
 p.add_argument('--app', action='store_true')
+p.add_argument('--key', type=int, choices=range(1,6), help='Press virtual F1–F5 before capture')
+p.add_argument('--model', choices=['x1d','x1dii','907x50c','x2d','x2dii'])
+p.add_argument('--tap',type=int,nargs=2,metavar=('X','Y'),help='Tap a specific menu control after the optional key')
 p.add_argument('--device', help='Imported firmware SHA256 prefix')
+p.add_argument('--output', type=Path, help='Directory for screenshots (defaults to --home)')
 args = p.parse_args()
 app = QApplication([])
 font_root = Path(os.environ['WINDIR']) / 'Fonts' if os.environ.get('WINDIR') else None
@@ -23,7 +27,11 @@ if font_root:
 w = Window(args.home.resolve())
 if args.device:
     w.refresh_library(args.home.resolve() / 'library' / args.device)
-w.error = lambda message: (print('FAILED:', message, flush=True), app.exit(1))
+if args.model:
+    index=w.model_choice.findData(args.model)
+    if index<0: raise SystemExit('Selected firmware cannot run this model')
+    w.model_choice.setCurrentIndex(index)
+w.error = lambda message: (print('FAILED:', message, flush=True), QTimer.singleShot(0,lambda:app.exit(1)))
 w.show()
 result = {'running': False}
 def capture():
@@ -31,17 +39,31 @@ def capture():
     if w.screen.frame is None:
         print('FAILED: No frame', flush=True); app.exit(1); return
     suffix = 'app' if args.app else 'original'
-    w.screen.frame.save(str(args.home / f'verified-{suffix}.png'))
-    w.grab().save(str(args.home / f'verified-workbench-{suffix}.png'))
-    print('PASS: running guest and captured real frame', flush=True)
+    output = args.output or args.home
+    output.mkdir(parents=True, exist_ok=True)
+    w.screen.frame.save(str(output / f'verified-{suffix}.png'))
+    w.grab().save(str(output / f'verified-workbench-{suffix}.png'))
+    # Transport success alone does not establish usable UI support.
+    image=w.screen.frame
+    colors={image.pixelColor(x,y).rgb() for x in range(0,image.width(),8) for y in range(0,image.height(),8)}
+    if len(colors)<3:
+        print('FAILED: blank frame; capture retained for diagnosis',flush=True)
+        w.stop_session();return
+    print('CAPTURED: nonblank guest frame; inspect screenshot to verify UI and interaction', flush=True)
     w.stop_session()
     result['running'] = True
 def phase(value):
     print('PHASE:', value, flush=True)
     if value == 'running':
-        if not args.app:
+        if args.key:
+            QTimer.singleShot(2000, lambda: w.session.touch('key', 58+args.key, 1))
+            QTimer.singleShot(2200, lambda: w.session.touch('key', 58+args.key, 0))
+        elif not args.app:
             QTimer.singleShot(3000, lambda: w.session.touch('down', 393, 390))
             QTimer.singleShot(3200, lambda: w.session.touch('up', 393, 390))
+        if args.tap:
+            QTimer.singleShot(5000,lambda:w.session.touch('down',*args.tap))
+            QTimer.singleShot(5200,lambda:w.session.touch('up',*args.tap))
         QTimer.singleShot(12000, capture)
     elif value == 'stopped':
         QTimer.singleShot(1000, lambda: app.exit(0 if result['running'] else 1))
@@ -49,7 +71,7 @@ w.launch(mode='app' if args.app else 'live')
 if w.session:
     w.session.phase.connect(phase)
     w.session.message.connect(lambda s: print(s, flush=True))
-QTimer.singleShot(240000, lambda: (print('FAILED: timeout', flush=True), w.stop_session()))
+QTimer.singleShot(600000, lambda: (print('FAILED: timeout', flush=True), w.stop_session()))
 code = app.exec()
 if w.session:
     w.session.stop(); w.session.wait(30000)

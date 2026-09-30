@@ -31,7 +31,7 @@ class FrameStream:
             while not self.stopped.is_set():
                 header = self._read(512)
                 magic, w, h, stride, fmt, number = struct.unpack_from("<6I", header)
-                if magic != 0x58463244 or w != 1024 or h != 768 or not w*4 <= stride <= 32768 or fmt > 1:
+                if magic != 0x58463244 or not 1 <= w <= 4096 or not 1 <= h <= 4096 or not w*4 <= stride <= 32768 or stride*h > 32*1024**2 or fmt > 1:
                     raise ValueError("invalid frame stream header")
                 pixels = self._read(stride*h)
                 self.latest = (header, pixels)

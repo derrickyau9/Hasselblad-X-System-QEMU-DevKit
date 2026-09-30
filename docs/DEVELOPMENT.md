@@ -31,13 +31,13 @@ Android SDK `ndk/*` installs. Running the original UI does not require an NDK.
 `Build app` and import are disabled during a running guest: the virtual FAT disk
 is read-only, and its source directory must not change while attached.
 
-A compatible Qt Android ARM64 build is needed for custom Qt guest apps; the
+A Qt toolchain matching Android ARM32, Android ARM64, or Linux ARMhf is needed for custom Qt guest apps; the
 desktop's PySide6/Windows Qt libraries cannot be cross-used. The example avoids
 this extra dependency so the initial edit/build/run loop remains small.
 
 ## Rebuild the three guest helpers
 
-The repository includes only **our own** small compiled ARM64 helpers and their
+The repository includes only **our own** small compiled ARM32, ARM64 and Linux ARMhf helpers and their
 complete C sources. It does not contain firmware libraries or Android SDK images.
 
 ```powershell
@@ -73,3 +73,21 @@ builds that folder; pushing a version tag publishes the ZIP and SHA-256 file.
 The source ZIP is drawn from `git ls-files`, never from the entire workspace.
 Review staged files before releasing. Do not commit firmware, user workspaces,
 downloaded runtimes or logs.
+
+## Multi-model builds
+
+The workbench chooses the C app target from `device.json`. For X1D, NDK clang uses the pinned Linux sysroot and GNU dynamic loader; it does not link Android Bionic. The base VM still boots the Android SDK kernel, then enters the isolated Linux userspace.
+
+Rebuild Android ARM32 helpers with `scripts/build_helpers.ps1 -Architecture arm32`, using an imported X1D II `camera/lib` directory. This also builds the ION adapter. Rebuild Linux helpers with:
+
+```powershell
+.\scripts\build_linux_helpers.ps1 -NdkRoot '<NDK r27>' -Sysroot '<DevKit data>\runtime\linux-armhf\sysroot'
+```
+
+Use `scripts/verify_guest.py --home .local --device <hash-prefix> --model 907x50c --output .local/check` to test the shared package's 907X profile. `--key 1` sends F1, and `--tap 560 360` tests the X1D General Settings entry. The verifier rejects blank frames but every screenshot must still be reviewed for completeness and the intended menu.
+
+For a local portable preview without replacing the previous build:
+
+```powershell
+.\.venv\Scripts\python scripts/build.py --name X2DII-DevKit-preview
+```

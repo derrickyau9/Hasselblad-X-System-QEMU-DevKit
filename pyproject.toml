@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hasselblad-x2dii-qemu-devkit"
-version = "0.1.1"
-description = "A native Windows workbench for local X2D II firmware UI development"
+version = "0.2.0"
+description = "A native Windows workbench for local Hasselblad X System firmware UI development"
 requires-python = ">=3.11"
 license = "AGPL-3.0-or-later"
 dependencies = ["PySide6==6.9.3", "cryptography==46.0.3", "pyelftools==0.33", "dissect.extfs==3.15", "brotli==1.2.0", "pyfdt==0.3"]
@@ -20,7 +20,7 @@ x2dii-devkit = "devkit.application:main"
 include = ["devkit*"]
 
 [tool.setuptools.package-data]
-devkit = ["assets/*", "helpers/*", "guest/*.c", "guest/*.sh", "guest/*.conf", "*.json", "templates/*"]
+devkit = ["assets/*", "helpers/*", "helpers/arm32/*", "helpers/linux-arm32/*", "guest/*.c", "guest/*.h", "guest/*.sh", "guest/*.conf", "*.json", "templates/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

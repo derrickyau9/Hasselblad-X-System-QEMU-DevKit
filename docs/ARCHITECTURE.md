@@ -79,3 +79,14 @@ into a live camera interface.
 Runtime paths are kept stable because qcow2 overlays reference their backing
 files. If moving the runtime, use a fresh DevKit data directory and re-import.
 Keep your development workspace backed up separately.
+
+## Multi-model adapters
+
+- X2D / X2D II use Android ARM64 libraries and the static `wayland-egl` Qt platform plugin with the Qt Quick software backend.
+- X1D II / CFV II 50C use the firmware's Android ARM32 linker and libraries under the SDK kernel's ARM32 compatibility mode. A guest-only ION adapter allocates ordinary tmpfs buffers. The compositor implements Eagle shared-memory tokens and accepts only regular buffers owned by the connected Wayland client. Early firmware sends byte strides; later firmware sends pixel strides.
+- X1D imports the legacy bzip2 root filesystem. A separate guest disk contains a Linux ARMhf chroot plus pinned Debian Bullseye Qt 5.15 libraries. No package installation scripts execute on the host. Root filesystem symlinks exist only inside the guest tar; the build sysroot materializes library/header links as regular files on Windows.
+- X1D's compressed root QML Item is adapted into a Window, allowing Qt 5.15 to expose its nested camera windows. The original executable is retained. The adapted resource stays within its original byte allocation; ELF machine instructions are unchanged.
+- The compositor selects the primary camera window, retains pixels outside each surface's damage regions, and exposes touch plus a minimal F1–F5/Escape keyboard. Presentation, buffer release and frame callbacks occur on a 16 ms display tick; resource destruction removes pending releases. X1D uses 640×480; other profiles use 1024×768. This is not a general desktop compositor.
+- Shared X1D II / 907X 50C firmware is imported once. Model selection controls the guest hardware identity and is saved with the library entry. Guest settings and the source workspace belong to that entry.
+
+Linux package URLs, sizes and SHA-256 digests are pinned in `devkit/linux-downloads.json`. Debian copyright notices remain under `/usr/share/doc` inside the guest runtime. The original firmware, SDK image and downloaded libraries are excluded from repository and portable distribution.

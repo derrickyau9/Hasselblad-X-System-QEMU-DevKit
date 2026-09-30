@@ -5,6 +5,7 @@ import tempfile
 from pyfdt.pyfdt import FdtBlobParse, FdtNode, FdtPropertyStrings
 from .gpt import patched_chunks
 from ..core import Task, write_json, read_json
+from ..models import MODELS, model_id
 
 def _qemu(qemu, name):
     path = qemu / name
@@ -62,17 +63,26 @@ def prepare(device, runtime, task=None):
     if not key.exists():
         shutil.copy2(image / 'encryptionkey.img', key)
     write_json(device / 'guest-runtime.json', runtime)
+    if read_json(device / 'device.json').get('abi') == 'linux-arm32' and not (device / 'linux-root.img').exists():
+        temporary = device / 'linux-root.partial.img'
+        task.run([runtime['mke2fs'], '-q', '-F', '-t', 'ext4', '-b', '4096', temporary, '524288'], timeout=300)
+        temporary.replace(device / 'linux-root.img')
 
 def command(device, runtime, console_port, input_port, frame_port):
     image, qemu = Path(runtime['image']), Path(runtime['qemu'])
+    profile = read_json(device / 'device.json') or {}
+    hw_version = MODELS[model_id(profile)]['hardware']
     args = [str(_qemu(qemu, 'qemu-system-aarch64')), '-machine', 'virt', '-cpu', 'cortex-a57',
             '-m', '2048', '-smp', '2', '-accel', 'tcg,thread=multi,tb-size=512', '-display', 'none',
             '-monitor', 'none', '-no-reboot', '-nic', 'none',
             '-serial', f'tcp:127.0.0.1:{console_port},server=on,wait=off',
             '-kernel', str(image / 'kernel-ranchu'), '-dtb', str(device / 'android-virt.dtb'),
             '-append', 'console=ttyAMA0 earlycon=pl011,0x09000000 loglevel=1 quiet androidboot.hardware=ranchu '
-                       'hw_version=6.1.0 mp_state=production lcd_type=0 root=/dev/vda1 rootwait ro rootfstype=ext4 init=/init skip_initramfs']
+                       f'hw_version={hw_version} mp_state=production lcd_type=0 root=/dev/vda1 rootwait ro rootfstype=ext4 init=/init skip_initramfs']
     # virtio-mmio disks enumerate in reverse attachment order with this SDK kernel.
+    if profile.get('abi') == 'linux-arm32':
+        args += ['-drive', f'if=none,id=linuxroot,file={device / "linux-root.img"},format=raw',
+                 '-device', 'virtio-blk-device,drive=linuxroot']
     for name, file, options in [
         ('framebuffer', str(device / 'framebuffer.raw'), 'format=raw,cache=unsafe'),
         ('payload', 'fat:ro:' + str(device / 'payload-stage'), 'format=raw,readonly=on'),
@@ -81,7 +91,7 @@ def command(device, runtime, console_port, input_port, frame_port):
         ('vendor', str(device / 'vendor-name.qcow2'), 'format=qcow2,readonly=on'),
         ('system', str(device / 'system-name.qcow2'), 'format=qcow2,snapshot=on')]:
         args += ['-drive', f'if=none,id={name},file={file},{options}', '-device', f'virtio-blk-device,drive={name}']
-    args += ['-device', 'virtio-serial-device']
+    args += ['-device', 'virtio-rng-device', '-device', 'virtio-serial-device']
     for identifier, port, name in [('uiinput', input_port, 'x2dii.input'), ('uiframes', frame_port, 'x2dii.frames')]:
         args += ['-chardev', f'socket,id={identifier},host=127.0.0.1,port={port},server=on,wait=off',
                  '-device', f'virtserialport,chardev={identifier},name={name}']

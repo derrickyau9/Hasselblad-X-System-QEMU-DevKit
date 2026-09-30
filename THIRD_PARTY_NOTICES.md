@@ -43,6 +43,10 @@ authorship or validation of the DevKit's QEMU implementation.
 - **Android SDK system image and Platform Tools**, downloaded from Google's official repository after the user accepts the [Android SDK license](https://developer.android.com/studio/terms). [AOSP source](https://source.android.com/).
 - **Android NDK**, optional and installed by the developer from [Google](https://developer.android.com/ndk/downloads).
 
+## X1D Linux compatibility runtime
+
+Pinned Debian Bullseye ARMhf packages are downloaded separately from `deb.debian.org`. They include Qt, glibc, Wayland and their dependencies, under each package’s own license. Package versions and hashes are recorded in `devkit/linux-downloads.json`; copyright and source references are retained in the runtime’s `/usr/share/doc/<package>/copyright` files. Debian source packages are available through [Debian Sources](https://sources.debian.org/). No Debian maintainer scripts run on the host.
+
 ## User-supplied firmware
 
 Hasselblad/DJI firmware binaries, Qt assets embedded in them, proprietary libraries,
