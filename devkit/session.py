@@ -13,6 +13,7 @@ from .guest.frame_stream import FrameStream
 
 class Session(QThread):
     message = Signal(str)
+    console = Signal(str)
     phase = Signal(str)
     failed = Signal(str)
 
@@ -121,7 +122,7 @@ class Session(QThread):
             for line in ['dmesg -n 1', 'stop surfaceflinger', 'stop vendor.hwcomposer-2-1',
                          'mkdir -p /mnt/x2dii', 'mount -t vfat /dev/block/vde1 /mnt/x2dii']:
                 send(line); until(b'console:/ #', 15)
-            self.message.emit('Starting original camera UI / 启动原厂界面…')
+            self.message.emit('Starting guest app / 启动应用…' if self.mode == 'app' else 'Starting original camera UI / 启动原厂界面…')
             send(f'sh /mnt/x2dii/camera/run.sh {self.mode} &')
             until(b'X2DII_UI_SESSION_READY', 150)
             deadline = time.monotonic() + 30
@@ -131,7 +132,8 @@ class Session(QThread):
                 raise RuntimeError('Guest started but no valid UI frame arrived')
             self.ready = True
             self.phase.emit('running')
-            self.message.emit('Original UI is ready / 原厂界面已就绪')
+            self.message.emit('Guest app is ready / 应用已就绪' if self.mode == 'app' else 'Original UI is ready / 原厂界面已就绪')
+            console_pending = bytearray()
             while not self.task.cancelled.is_set():
                 if process.poll() is not None:
                     raise RuntimeError('QEMU stopped unexpectedly')
@@ -147,7 +149,14 @@ class Session(QThread):
                     send(self.commands.get_nowait())
                 output = received() if connection in readable else b''
                 if output:
-                    self.message.emit(output.decode(errors='replace').strip())
+                    console_pending.extend(output)
+                    while b'\n' in console_pending:
+                        line, _, rest = console_pending.partition(b'\n')
+                        console_pending[:] = rest
+                        self.console.emit(line.decode(errors='replace').rstrip())
+                    if len(console_pending) > 65536:
+                        self.console.emit(console_pending.decode(errors='replace'))
+                        console_pending.clear()
             self.phase.emit('stopping')
             send('reboot -p', cancellable=False)
             try:

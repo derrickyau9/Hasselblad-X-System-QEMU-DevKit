@@ -18,6 +18,8 @@ No preinstalled QEMU/Android runtime was required for those checks.
 
 The portable PyInstaller EXE also started the original 1.2.7.16 UI and captured
 a valid guest frame with `frozen: true`; Python was provided by the distribution.
+A second portable EXE check imported the original `.cim` into a fresh data
+directory, prepared new guest disks, displayed a valid frame and exited cleanly.
 
 The original and adapted ELF `.text` and `.plt` sections compare byte for byte
 identical for both versions. Only the two intended embedded QML strings differ.

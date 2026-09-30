@@ -123,13 +123,13 @@ class Window(QMainWindow):
         app.styleHints().colorSchemeChanged.connect(lambda *_: self.appearance())
         body = QWidget(); self.setCentralWidget(body)
         row = QHBoxLayout(body); row.setContentsMargins(18, 18, 18, 18); row.setSpacing(22)
-        sidebar = QFrame(); sidebar.setObjectName('sidebar'); sidebar.setFixedWidth(206)
+        sidebar = QFrame(); sidebar.setObjectName('sidebar'); sidebar.setFixedWidth(224)
         side = QVBoxLayout(sidebar); side.setContentsMargins(18, 24, 18, 20); side.setSpacing(12)
         brand = QLabel('H  /  X2D II'); brand.setObjectName('subtitle'); side.addWidget(brand)
         side.addWidget(self.label('QEMU DEVKIT', 'QEMU DEVKIT', 'eyebrow'))
         side.addSpacing(25)
         self.pages = QStackedWidget(); self.nav = []
-        for i, (en, zh) in enumerate([('Firmware library', '固件库'), ('Development', '开发工作区'), ('Console & logs', '控制台与日志'), ('Settings', '设置')]):
+        for i, (en, zh) in enumerate([('Firmware library', '固件库'), ('Development', '开发工作区'), ('Console and logs', '控制台与日志'), ('Settings', '设置')]):
             b = QToolButton(); b.setObjectName('nav'); b.setCheckable(True); b.setToolButtonStyle(Qt.ToolButtonTextOnly)
             self.bind(b.setText, en, zh); b.clicked.connect(lambda _=False, n=i: self.navigate(n))
             side.addWidget(b); self.nav.append(b)
@@ -319,10 +319,12 @@ class Window(QMainWindow):
             return self.error(self.tr('Build the app first.', '请先编译应用。'))
         self.screen.frame = None; self.last_frame = None
         self.session = Session(self.device, self.runtime, mode); self.session.message.connect(self.log)
+        self.session.console.connect(self.logs.appendPlainText)
         self.session.phase.connect(self.on_phase); self.session.failed.connect(self.error); self.session.finished.connect(self.update_controls)
         self.session.start(); self.navigate(0); self.update_controls()
     def on_phase(self, phase):
         self.current_phase = phase; self.update_controls()
+        self.statusBar().showMessage(self.badge.text())
     def stop_session(self):
         if self.session: self.session.stop()
     def build_app(self):
