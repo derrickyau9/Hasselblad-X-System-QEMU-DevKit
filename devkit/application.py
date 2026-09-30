@@ -406,7 +406,13 @@ def main():
             window.grab().save(str(output / 'workbench.png'))
             write_json(output / 'result.json', {'ok': True, 'frozen': bool(getattr(sys, 'frozen', False)), 'firmware': read_json(window.device / 'device.json')['version']})
             window.close()
-        QTimer.singleShot(500, begin_check)
+        if args.firmware:
+            def import_check():
+                window.import_file(args.firmware)
+                window.job.finished.connect(lambda: QTimer.singleShot(100, begin_check) if not window.closing else None)
+            QTimer.singleShot(200, import_check)
+        else:
+            QTimer.singleShot(500, begin_check)
         QTimer.singleShot(240000, lambda: fail('Timed out') if not window.closing else None)
-    if args.firmware: QTimer.singleShot(200, lambda: window.import_file(args.firmware))
+    elif args.firmware: QTimer.singleShot(200, lambda: window.import_file(args.firmware))
     sys.exit(app.exec())

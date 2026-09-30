@@ -16,6 +16,9 @@ the older experiment's extracted system directories. QEMU, SDK image and platfor
 tools were downloaded, checksum-verified and extracted by the new runtime setup.
 No preinstalled QEMU/Android runtime was required for those checks.
 
+The portable PyInstaller EXE also started the original 1.2.7.16 UI and captured
+a valid guest frame with `frozen: true`; Python was provided by the distribution.
+
 The original and adapted ELF `.text` and `.plt` sections compare byte for byte
 identical for both versions. Only the two intended embedded QML strings differ.
 The original `.cim` files remain unchanged.
