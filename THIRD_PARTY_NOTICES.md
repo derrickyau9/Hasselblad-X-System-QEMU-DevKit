@@ -24,6 +24,18 @@ imposed on reverse engineering for debugging modifications to LGPL components.
 The release also includes the project's corresponding source and build scripts.
 Installed wheel license texts are retained under `third-party-licenses`.
 
+## Research references / 研究参考
+
+**Radium Wang / radium-wang** — [Hasselblad X-System CIM Firmware Research & Feature Extensions](https://github.com/radium-wang/Hasselblad-X-System-CIM-Firmware-Research-Feature-Extensions).
+This MIT-licensed upstream project (Copyright © 2026 Radium Wang) provided reference
+and background for offline CIM firmware analysis and original UI/menu extension
+research. This acknowledgement credits that research; it does not imply upstream
+authorship or validation of the DevKit's QEMU implementation.
+
+感谢 **Radium Wang / radium-wang** 公开分享哈苏 X 系列 CIM 固件研究及功能扩展项目，
+为固件离线分析、原厂 UI 与菜单扩展研究提供参考。上游项目使用 MIT 许可证，
+版权归 Radium Wang 所有；此致谢不表示上游作者开发或验证了本 DevKit 的 QEMU 实现。
+
 ## Downloaded separately, not bundled in the portable app
 
 - **QEMU**, GPL-2.0 and other included licenses, downloaded from [Stefan Weil](https://qemu.weilnetz.de/w64/). The extracted download includes its license and source information. [QEMU source](https://gitlab.com/qemu-project/qemu).

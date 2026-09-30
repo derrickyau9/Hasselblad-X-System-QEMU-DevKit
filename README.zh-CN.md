@@ -67,6 +67,7 @@ cd Hasselblad-X2D-II-QEMU-DevKit
 
 ## 致谢和许可证
 
+- **[Radium Wang / radium-wang — Hasselblad X-System CIM Firmware Research & Feature Extensions](https://github.com/radium-wang/Hasselblad-X-System-CIM-Firmware-Research-Feature-Extensions)**：为 CIM 固件离线分析、原厂 UI 与菜单扩展研究提供了参考。感谢 Radium 公开分享相关研究成果。
 - **[Derrick Yao / tsla-infotainment-lab](https://github.com/derrickyau9/tsla-infotainment-lab)**：Material 主题及 Qt 工作台设计来源，保留 MIT 版权声明。参考版本 `f590d8fd9a053ab072df94b994c0a58ee7b976ed`。
 - 基于 Derrick Yao 已有的 X2D II QEMU / UI 研究及 CIM 离线容器工具。
 - QEMU、Stefan Weil 的 Windows 构建、Android / AOSP、Qt for Python、7-Zip、Dissect 等开源项目。
