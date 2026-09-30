@@ -2,7 +2,7 @@
 
 **A Windows workbench, with a source-run macOS ARM64 path, for exploring the original X2D II interface and developing guest apps.**
 
-[简体中文](README.zh-CN.md) · [Download Windows app](https://github.com/derrickyau9/Hasselblad-X2D-II-QEMU-DevKit/releases/latest) · [Official firmware](https://www.hasselblad.com/x-system/firmware/)
+[简体中文](README.zh-CN.md) · [Download Windows app](https://github.com/derrickyau9/Hasselblad-X2D-II-QEMU-DevKit/releases/latest)
 
 ![DevKit workbench](docs/workbench.png)
 
