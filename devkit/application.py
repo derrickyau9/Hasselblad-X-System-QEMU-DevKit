@@ -10,7 +10,7 @@ import struct
 import sys
 import time
 from PySide6.QtCore import Qt, QTimer, QThread, Signal, QRectF, QUrl
-from PySide6.QtGui import QPainter, QColor, QImage, QDesktopServices, QFont
+from PySide6.QtGui import QPainter, QColor, QImage, QDesktopServices, QFont, QPixmap, QIcon
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QFrame, QLabel, QPushButton,
     QToolButton, QVBoxLayout, QHBoxLayout, QListWidget, QStackedWidget, QFileDialog,
     QPlainTextEdit, QComboBox, QMessageBox, QProgressBar, QLineEdit, QDialog, QCheckBox,
@@ -117,6 +117,9 @@ class Window(QMainWindow):
         self.last_frame = None
         self.closing = False
         self.setWindowTitle('Hasselblad X2D II QEMU DevKit')
+        cat_logo = QPixmap(str(ASSETS / 'assets' / 'cat-logo.jpg'))
+        if not cat_logo.isNull():
+            self.setWindowIcon(QIcon(cat_logo))
         self.resize(1400, 940); self.setMinimumSize(1120, 780)
         self.setAcceptDrops(True)
         app = QApplication.instance()
@@ -126,8 +129,10 @@ class Window(QMainWindow):
         row = QHBoxLayout(body); row.setContentsMargins(18, 18, 18, 18); row.setSpacing(22)
         sidebar = QFrame(); sidebar.setObjectName('sidebar'); sidebar.setFixedWidth(224)
         side = QVBoxLayout(sidebar); side.setContentsMargins(18, 24, 18, 20); side.setSpacing(12)
-        brand = QLabel('H  /  X2D II'); brand.setObjectName('subtitle'); side.addWidget(brand)
-        side.addWidget(self.label('QEMU DEVKIT', 'QEMU DEVKIT', 'eyebrow'))
+        brand = QLabel()
+        brand.setAccessibleName('Cat logo')
+        brand.setPixmap(cat_logo.scaled(160, 117, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        side.addWidget(brand)
         side.addSpacing(25)
         self.pages = QStackedWidget(); self.nav = []
         for i, (en, zh) in enumerate([('Firmware library', '固件库'), ('Development', '开发工作区'), ('Console and logs', '控制台与日志'), ('Settings', '设置')]):
@@ -137,7 +142,7 @@ class Window(QMainWindow):
         side.addStretch()
         side.addWidget(self.label('LOCAL WORKBENCH', '本地开发环境', 'eyebrow'))
         host_label = 'macOS ARM64' if sys.platform == 'darwin' and platform.machine() == 'arm64' else ('macOS' if sys.platform == 'darwin' else 'Windows x64')
-        side.addWidget(self.label(f'ARM64 · Software rendering\n{host_label} · v0.1.0', f'ARM64 · 软件渲染\n{host_label} · v0.1.0', 'muted'))
+        side.addWidget(self.label(f'ARM64 · Software rendering\n{host_label} · v0.1.1', f'ARM64 · 软件渲染\n{host_label} · v0.1.1', 'muted'))
         self.official = self.button('Get official firmware ↗', '下载官方固件 ↗', lambda: QDesktopServices.openUrl(QUrl('https://www.hasselblad.com/x-system/firmware/')))
         side.addWidget(self.official)
         row.addWidget(sidebar); row.addWidget(self.pages, 1)
@@ -169,7 +174,7 @@ class Window(QMainWindow):
         self.pages.addWidget(p); return layout
 
     def make_library(self):
-        layout = self.page('Your camera. A new workspace.', '你的相机，全新的开发空间。',
+        layout = self.page('Hasselblad X2D II QEMU DevKit', 'Hasselblad X2D II QEMU DevKit',
             'Bring your own firmware. Explore the original interface in a local QEMU guest.', '导入官方固件，在本地 QEMU 虚拟机中探索原厂界面。')
         self.drop = DropArea('', '')
         self.bind(self.drop.title.setText, '↓  Drop official firmware here', '↓  将官方固件拖到这里')

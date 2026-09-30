@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hasselblad-x2dii-qemu-devkit"
-version = "0.1.0"
+version = "0.1.1"
 description = "A native Windows workbench for local X2D II firmware UI development"
 requires-python = ">=3.11"
 license = "AGPL-3.0-or-later"
