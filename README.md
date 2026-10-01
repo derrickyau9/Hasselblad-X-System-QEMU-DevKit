@@ -1,4 +1,4 @@
-# Hasselblad X2D II QEMU DevKit
+# Hasselblad X System QEMU DevKit
 
 **A Windows workbench, with a source-run macOS ARM64 path, for exploring the original Hasselblad X System interfaces and developing guest apps.**
 
