@@ -21,6 +21,8 @@
 - QEMU 中原厂 UI 实时画面、鼠标触控、启动 / 停止、PNG 截图。
 - 中文 / English、跟随系统 / 浅色 / 深色、紫 / 蓝 / 绿主题。
 - 开发工作区、按机型选择架构的 `hello.c` 示例、NDK clang 编译及虚拟机运行。
+- 在本地 QEMU 中导入、选择和移除经过校验的第三方 Wayland 应用包。
+- 可为 X1D 或 X2D II 虚拟机应用会话构建[NetSurf 浏览器原型](docs/BROWSER_PROTOTYPE.md)，支持触摸键盘和 X2D II 可选 QEMU 网络。
 - 虚拟机 Shell 控制台和日志目录。
 - 每份固件独立的数据盘，系统改动使用临时快照。
 
@@ -69,6 +71,10 @@ X1D 首次启动额外下载约 78 MB 的 Debian ARMhf 运行库，之后可离�
 仅启动原厂 UI 不需要 NDK。示例是按机型编译的 Wayland 共享内存客户端。开发自定义 Qt guest 应用另需与所选固件 ABI 匹配的 Qt 工具链，本项目不附带该工具链；Windows Qt 可执行程序不能直接在虚拟机里运行。
 
 [开发说明](docs/DEVELOPMENT.md) · [故障排查](docs/TROUBLESHOOTING.md)
+
+可用 [`scripts/app_packages.py`](scripts/app_packages.py) 将目标架构的
+ELF 程序打包成 `.xdevapp`，再在开发页导入。应用包必须匹配所选机型与
+ABI；它只在独立的本地 QEMU 会话运行，不会安装到实机。
 
 ## 从源码运行
 

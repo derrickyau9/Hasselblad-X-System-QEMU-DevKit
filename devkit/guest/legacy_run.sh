@@ -20,4 +20,4 @@ for folder in dev proc sys; do
 done
 mkdir -p "$root/devkit"
 mount -o bind /mnt/x2dii "$root/devkit"
-chroot "$root" /bin/sh /devkit/camera/linux_ui.sh "$1" || fail
+chroot "$root" /bin/sh /devkit/camera/linux_ui.sh "$1" "$3" "$4" || fail

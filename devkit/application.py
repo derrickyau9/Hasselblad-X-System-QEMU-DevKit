@@ -20,6 +20,7 @@ from .firmware import import_firmware, TESTED_VERSION
 from .runtime import discover, setup
 from .development import workspace, build, find_ndk
 from .session import Session
+from .guest.prepare import network_supported
 from .models import MODELS, model_id, available_models
 from .theme import apply_theme, current_colors
 
@@ -84,7 +85,6 @@ class Screen(QWidget):
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton and self.dragging:
             self.send('up', event); self.dragging = False
-
 class DropArea(QFrame):
     dropped = Signal(str)
     clicked = Signal()
@@ -229,6 +229,19 @@ class Window(QMainWindow):
         buttons.addWidget(self.build_button); buttons.addWidget(self.app_button); buttons.addStretch(); card.addLayout(buttons)
         card.addWidget(self.button('Download Android NDK ↗', '下载 Android NDK ↗', lambda: QDesktopServices.openUrl(QUrl('https://developer.android.com/ndk/downloads'))))
         card = self.card(layout)
+        card.addWidget(self.label('03  Test a third-party guest app', '03  测试第三方虚拟机应用', 'subtitle'))
+        card.addWidget(self.label('Import a validated .xdevapp package for this firmware. Apps run only in the local QEMU guest; original UI and apps use separate sessions.', '导入适用于当前固件的 .xdevapp 包。应用只在本地 QEMU 虚拟机运行，与原厂 UI 使用独立会话。', 'muted'))
+        self.app_choice = QComboBox(); self.app_choice.currentIndexChanged.connect(lambda _: self.update_controls()); card.addWidget(self.app_choice)
+        app_actions = QHBoxLayout()
+        self.import_app_button = self.button('Import app package', '导入应用包', self.import_app_package)
+        self.remove_app_button = self.button('Remove selected package', '移除所选应用包', self.remove_app_package)
+        app_actions.addWidget(self.import_app_button); app_actions.addWidget(self.remove_app_button); app_actions.addStretch(); card.addLayout(app_actions)
+        self.app_network = QCheckBox()
+        self.bind(self.app_network.setText, 'Enable QEMU network for this app session', '为此次应用会话启用 QEMU 网络')
+        self.app_network.setChecked(False)
+        card.addWidget(self.app_network)
+        card.addWidget(self.label('Off by default. Verified only for X2D II ARM64 apps in QEMU; the original camera UI stays offline.', '默认关闭。仅 X2D II ARM64 虚拟机应用已验证；原厂相机 UI 保持离线。', 'muted'))
+        card = self.card(layout)
         card.addWidget(self.label('What this environment provides', '开发环境能力', 'subtitle'))
         card.addWidget(self.label('Original Qt UI + a minimal Wayland compositor + mocked camera services. The included C app uses shared memory. Custom Qt apps need a toolchain matching the selected firmware’s ABI.', '原厂 Qt UI、精简 Wayland 合成器和模拟相机服务。附带的 C 示例使用共享内存绘制；自定义 Qt 应用另需与所选固件 ABI 匹配的工具链。', 'muted'))
         layout.addStretch()
@@ -334,6 +347,7 @@ class Window(QMainWindow):
             for model in available_models(profile): self.model_choice.addItem(MODELS[model]['label'],model)
             self.model_choice.setCurrentIndex(self.model_choice.findData(model_id(profile)))
         self.model_choice.blockSignals(False)
+        self.refresh_apps()
         self.update_controls()
     def select_model(self,index):
         if not self.device or self.busy(): return
@@ -342,15 +356,60 @@ class Window(QMainWindow):
         if selected not in available_models(profile): return
         profile['model'] = selected
         write_json(self.device / 'device.json',profile)
+        self.refresh_apps()
         self.update_controls()
+    def refresh_apps(self, select=None):
+        self.app_choice.clear()
+        self.app_choice.addItem(self.tr('Built-in Hello example', '内置 Hello 示例'), None)
+        if self.device:
+            from .packages import list_packages
+            profile = read_json(self.device / 'device.json')
+            abi = profile.get('abi') or MODELS[model_id(profile)]['abi']
+            for package in list_packages(self.device):
+                if package['abi'] == abi and model_id(profile) in package['models']:
+                    key = (package['id'], package['version'])
+                    self.app_choice.addItem(f"{package['id']} · {package['version']}", key)
+                    if key == select: self.app_choice.setCurrentIndex(self.app_choice.count()-1)
+    def import_app_package(self):
+        if self.busy() or not self.device: return
+        path, _ = QFileDialog.getOpenFileName(self, self.tr('Import QEMU guest app', '导入 QEMU 虚拟机应用'), '', 'DevKit guest app (*.xdevapp)')
+        if not path: return
+        from .packages import install_package
+        def done(package):
+            self.refresh_apps((package['id'], package['version']))
+            self.log(self.tr('Package imported. Select Run app to test in QEMU.', '应用包已导入，点击「运行应用」在 QEMU 中测试。'))
+        self.run_job(lambda task: install_package(self.device, path, task), done)
+    def remove_app_package(self):
+        if self.busy() or not self.device: return
+        key = self.app_choice.currentData()
+        if key is None: return
+        from .packages import remove_package
+        self.run_job(lambda task: remove_package(self.device, *key), lambda _: self.refresh_apps())
     def launch(self, checked=False, mode='live'):
         if self.busy() or not self.device: return
         if not self.runtime:
             return self.install_runtime(then=lambda: self.launch(mode=mode))
-        if mode == 'app' and not (self.device / 'payload-stage/app/hello').exists():
-            return self.error(self.tr('Build the app first.', '请先编译应用。'))
+        network = mode == 'app' and self.app_network.isChecked()
+        if network and not network_supported(read_json(self.device / 'device.json'), mode):
+            return self.error(self.tr('QEMU networking is verified only for X2D II ARM64 app sessions.', 'QEMU 网络目前只在 X2D II ARM64 应用会话中验证。'))
+        app_entry = None
+        if mode == 'app':
+            key = self.app_choice.currentData()
+            if key is None:
+                if not (self.device / 'payload-stage/app/hello').exists():
+                    return self.error(self.tr('Build the app first.', '请先编译应用。'))
+            else:
+                from .packages import activate_package, active_package
+                try:
+                    activate_package(self.device, *key)
+                    package = active_package(self.device)
+                    app_entry = f"apps/{package['id']}/{package['version']}/{package['entry']}"
+                except (OSError, ValueError, RuntimeError, KeyError) as error:
+                    return self.error(str(error))
         self.screen.frame = None; self.last_frame = None
-        self.session = Session(self.device, self.runtime, mode); self.session.message.connect(self.log)
+        # The network choice applies to one launch only; a later app run starts offline.
+        if network: self.app_network.setChecked(False)
+        self.session = Session(self.device, self.runtime, mode, app_entry=app_entry, network=network); self.session.message.connect(self.log)
         self.session.console.connect(self.logs.appendPlainText)
         self.session.phase.connect(self.on_phase); self.session.failed.connect(self.error); self.session.finished.connect(self.update_controls)
         self.session.start(); self.navigate(0); self.update_controls()
@@ -388,6 +447,12 @@ class Window(QMainWindow):
         self.model_choice.setEnabled(not busy and self.model_choice.count()>1)
         for key in self.camera_keys: key.setEnabled(ready)
         self.build_button.setEnabled(bool(self.device) and not busy); self.app_button.setEnabled(bool(self.device) and not busy)
+        self.app_choice.setEnabled(bool(self.device) and not busy)
+        self.import_app_button.setEnabled(bool(self.device) and not busy)
+        self.remove_app_button.setEnabled(bool(self.device) and not busy and self.app_choice.currentData() is not None)
+        supports_network = bool(self.device and network_supported(read_json(self.device / 'device.json'), 'app'))
+        if not supports_network and self.app_network.isChecked(): self.app_network.setChecked(False)
+        self.app_network.setEnabled(supports_network and not busy)
         self.setup_button.setEnabled(not busy); self.send_button.setEnabled(ready); self.command.setEnabled(ready)
         self.shot.setEnabled(self.screen.frame is not None)
         self.progress.setVisible(busy and not ready); self.cancel.setVisible(bool(self.job and self.job.isRunning()))

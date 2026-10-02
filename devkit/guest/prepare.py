@@ -68,17 +68,30 @@ def prepare(device, runtime, task=None):
         task.run([runtime['mke2fs'], '-q', '-F', '-t', 'ext4', '-b', '4096', temporary, '524288'], timeout=300)
         temporary.replace(device / 'linux-root.img')
 
-def command(device, runtime, console_port, input_port, frame_port):
+def network_supported(profile, mode):
+    """The opt-in virtual NIC is verified only for X2D II ARM64 app sessions."""
+    model = model_id(profile)
+    identity = profile.get('model') == 'x2dii' or profile.get('name', '').startswith('Hasselblad X2D II')
+    return mode == 'app' and identity and model == 'x2dii' and profile.get('abi', MODELS[model]['abi']) == 'arm64'
+
+
+def command(device, runtime, console_port, input_port, frame_port, *, network=False, mode='live'):
     image, qemu = Path(runtime['image']), Path(runtime['qemu'])
     profile = read_json(device / 'device.json') or {}
+    if network and not network_supported(profile, mode):
+        raise ValueError('QEMU networking is supported only for X2D II ARM64 third-party app sessions')
     hw_version = MODELS[model_id(profile)]['hardware']
     args = [str(_qemu(qemu, 'qemu-system-aarch64')), '-machine', 'virt', '-cpu', 'cortex-a57',
             '-m', '2048', '-smp', '2', '-accel', 'tcg,thread=multi,tb-size=512', '-display', 'none',
-            '-monitor', 'none', '-no-reboot', '-nic', 'none',
+            '-monitor', 'none', '-no-reboot',
             '-serial', f'tcp:127.0.0.1:{console_port},server=on,wait=off',
             '-kernel', str(image / 'kernel-ranchu'), '-dtb', str(device / 'android-virt.dtb'),
             '-append', 'console=ttyAMA0 earlycon=pl011,0x09000000 loglevel=1 quiet androidboot.hardware=ranchu '
                        f'hw_version={hw_version} mp_state=production lcd_type=0 root=/dev/vda1 rootwait ro rootfstype=ext4 init=/init skip_initramfs']
+    if network:
+        args += ['-netdev', 'user,id=devkitnet', '-device', 'virtio-net-device,netdev=devkitnet']
+    else:
+        args += ['-nic', 'none']
     # virtio-mmio disks enumerate in reverse attachment order with this SDK kernel.
     if profile.get('abi') == 'linux-arm32':
         args += ['-drive', f'if=none,id=linuxroot,file={device / "linux-root.img"},format=raw',

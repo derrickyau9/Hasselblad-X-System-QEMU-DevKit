@@ -23,6 +23,8 @@ Initial runtime download: approximately **615 MB**. Allow **8 GB free disk space
 - English / Simplified Chinese; system / light / dark themes; Iris / Blue / Leaf accents.
 - A guest console, persistent logs and an editable **hello.c** development workspace.
 - **Build app → Run app** using an installed Android NDK; no NDK is needed to run the original UI.
+- Import, select and remove validated third-party Wayland app packages for the local QEMU guest.
+- Build a [NetSurf browser prototype](docs/BROWSER_PROTOTYPE.md) for X1D or X2D II guest app sessions, with touch input and optional X2D II QEMU networking.
 - Disposable system writes and a separate data disk per imported firmware.
 
 ## Compatibility and limits
@@ -55,6 +57,11 @@ Depending on the firmware, a local development copy adapts embedded QML image vi
 The example is a `wl_shm` client compiled for the selected firmware ABI. It runs in its own guest session; stop it and start Original UI to return. The firmware payload is read-only while QEMU runs, so stop before rebuilding. Custom Qt guest applications require a Qt toolchain matching the selected guest ABI, which is not included. A Windows Qt executable cannot run inside this guest.
 
 [Development guide](docs/DEVELOPMENT.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
+
+Third-party `.xdevapp` packages can be created from guest ELF programs with
+[`scripts/app_packages.py`](scripts/app_packages.py), then imported on the
+Development page. The package must match the selected model and ABI. It runs
+in a separate local QEMU session and does not install on a physical camera.
 
 ## Run from source
 

@@ -56,7 +56,29 @@ date
 logcat -v brief -s camera-gui-software:I &
 ui_log_pid=$!
 if [ "$1" = app ]; then
-    LD_LIBRARY_PATH=$camera_lib /mnt/x2dii/app/hello &
+    export DEVKIT_WIDTH=1024 DEVKIT_HEIGHT=768
+    app_entry=${3:-app/hello}
+    case "$app_entry" in
+        /*|*..*|*[!a-zA-Z0-9_./+-]*) echo X2DII_UI_FAILED; exit 1 ;;
+    esac
+    if [ ! -f "/mnt/x2dii/$app_entry" ]; then echo X2DII_UI_FAILED; exit 1; fi
+    app_lib=${4:-}
+    if [ -n "$app_lib" ]; then
+        case "$app_lib" in
+            apps/*/*/lib) ;;
+            *) echo X2DII_UI_FAILED; exit 1 ;;
+        esac
+        case "$app_entry" in
+            "${app_lib%/lib}"/*) ;;
+            *) echo X2DII_UI_FAILED; exit 1 ;;
+        esac
+        app_root=${app_lib%/lib}
+        (cd "/mnt/x2dii/$app_root" &&
+            export LD_LIBRARY_PATH="/mnt/x2dii/$app_lib:$camera_lib" &&
+            exec "/mnt/x2dii/$app_entry") &
+    else
+        LD_LIBRARY_PATH=$camera_lib "/mnt/x2dii/$app_entry" &
+    fi
 else
     ui_preload=
     [ -f /mnt/x2dii/ion_compat.so ] && ui_preload=/mnt/x2dii/ion_compat.so

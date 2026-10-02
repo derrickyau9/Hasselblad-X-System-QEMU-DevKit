@@ -20,7 +20,7 @@ extern const struct wl_interface wl_region_interface, wl_shell_interface;
 extern const struct wl_interface wl_shell_surface_interface, wl_callback_interface;
 extern const struct wl_interface wl_output_interface, wl_subcompositor_interface;
 extern const struct wl_interface wl_subsurface_interface;
-extern const struct wl_interface wl_seat_interface, wl_touch_interface;
+extern const struct wl_interface wl_seat_interface, wl_pointer_interface, wl_touch_interface;
 extern const struct wl_interface wl_keyboard_interface;
 struct wl_event_loop; struct wl_event_source;
 struct wl_list {struct wl_list *prev,*next;};
@@ -84,10 +84,12 @@ struct pending_release {
 static struct pending_release *pending_releases;
 static void capture_buffer(struct surface *,struct wl_resource *,const struct damage_rect *,unsigned,int);
 static struct wl_resource *touch_resource, *focus_surface;
+static struct wl_resource *pointer_resource, *pointer_focus;
 static struct wl_resource *keyboard_resource;
 static struct wl_resource *keyboard_focus;
 static struct wl_resource *output_resource;
 static int touch_down;
+static int pointer_down;
 static int output_width=1024,output_height=768;
 static uint64_t now_ms(void) {
     struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -253,6 +255,7 @@ static void commit(struct wl_client *c, struct wl_resource *r) {
 static const void *surface_impl[]={destroy,attach,damage,frame,region,region,commit,integer,integer,damage};
 static void surface_free(struct wl_resource *r) {
     if(focus_surface==r) focus_surface=NULL;
+    if(pointer_focus==r){pointer_focus=NULL;pointer_down=0;}
     if(keyboard_focus==r) keyboard_focus=NULL;
     struct surface *s=wl_resource_get_user_data(r);
     for(struct pending_release *p=pending_releases;p;p=p->next)if(p->surface==s)p->surface=NULL;
@@ -321,25 +324,70 @@ static void bind_subcompositor(struct wl_client *c,void *d,uint32_t v,uint32_t i
 }
 static void touch_free(struct wl_resource *r){if(touch_resource==r)touch_resource=NULL;}
 static void get_touch(struct wl_client *c,struct wl_resource *r,uint32_t id){
-    (void)r;touch_resource=wl_resource_create(c,&wl_touch_interface,1,id);
-    wl_resource_set_implementation(touch_resource,NULL,NULL,touch_free);
+    touch_resource=wl_resource_create(c,&wl_touch_interface,wl_resource_get_version(r),id);
+    static const void *touch_impl[]={destroy};
+    wl_resource_set_implementation(touch_resource,touch_impl,NULL,touch_free);
+}
+static void pointer_free(struct wl_resource *r){
+    if(pointer_resource==r){pointer_resource=NULL;pointer_focus=NULL;pointer_down=0;}
+}
+static void set_cursor(struct wl_client *c,struct wl_resource *r,uint32_t serial,
+                       struct wl_resource *surface,int32_t x,int32_t y){
+    (void)c;(void)r;(void)serial;(void)surface;(void)x;(void)y;
+    /* The host workbench supplies its own cursor; guest cursor surfaces are hidden. */
+}
+static const void *pointer_impl[]={set_cursor,destroy};
+static void get_pointer(struct wl_client *c,struct wl_resource *r,uint32_t id){
+    pointer_resource=wl_resource_create(c,&wl_pointer_interface,wl_resource_get_version(r),id);
+    pointer_focus=NULL;pointer_down=0;
+    wl_resource_set_implementation(pointer_resource,pointer_impl,NULL,pointer_free);
 }
 static void keyboard_free(struct wl_resource *r){if(keyboard_resource==r){keyboard_resource=NULL;keyboard_focus=NULL;}}
 static void get_keyboard(struct wl_client *c,struct wl_resource *r,uint32_t id){
-    (void)r;
     static const char map[]="xkb_keymap { xkb_keycodes \"devkit\" { minimum=8; maximum=255; <ESC>=9; <FK01>=67; <FK02>=68; <FK03>=69; <FK04>=70; <FK05>=71; }; xkb_types \"devkit\" { type \"ONE_LEVEL\" { modifiers=None; map[None]=Level1; level_name[Level1]=\"Any\"; }; }; xkb_compatibility \"devkit\" {}; xkb_symbols \"devkit\" { key <ESC> { [ Escape ] }; key <FK01> { [ F1 ] }; key <FK02> { [ F2 ] }; key <FK03> { [ F3 ] }; key <FK04> { [ F4 ] }; key <FK05> { [ F5 ] }; }; };";
     char name[]="/dev/x2dii-runtime/keymap-XXXXXX";int fd=mkstemp(name);
     if(fd<0)return;unlink(name);
     if(write_all(fd,map,sizeof(map))<0){close(fd);return;}
-    keyboard_resource=wl_resource_create(c,&wl_keyboard_interface,1,id);
-    wl_resource_set_implementation(keyboard_resource,NULL,NULL,keyboard_free);
+    keyboard_resource=wl_resource_create(c,&wl_keyboard_interface,wl_resource_get_version(r),id);
+    static const void *keyboard_impl[]={destroy};
+    wl_resource_set_implementation(keyboard_resource,keyboard_impl,NULL,keyboard_free);
     wl_resource_post_event(keyboard_resource,0,1,fd,(uint32_t)sizeof(map));close(fd);
+    if(wl_resource_get_version(keyboard_resource)>=4)wl_resource_post_event(keyboard_resource,5,0,0);
 }
-static const void *seat_impl[]={NULL,get_keyboard,get_touch};
+static const void *seat_impl[]={get_pointer,get_keyboard,get_touch,destroy};
 static void bind_seat(struct wl_client *c,void *d,uint32_t v,uint32_t id){
-    (void)d;(void)v;struct wl_resource *r=wl_resource_create(c,&wl_seat_interface,1,id);
+    (void)d;struct wl_resource *r=wl_resource_create(c,&wl_seat_interface,v>5?5:v,id);
     wl_resource_set_implementation(r,seat_impl,NULL,NULL);
-    wl_resource_post_event(r,0,6); /* keyboard and touch */
+    if(wl_resource_get_version(r)>=2)wl_resource_post_event(r,1,"devkit-seat");
+    wl_resource_post_event(r,0,7); /* pointer, keyboard and touch */
+}
+static void pointer_frame(void){
+    if(pointer_resource && wl_resource_get_version(pointer_resource)>=5)
+        wl_resource_post_event(pointer_resource,5);
+}
+static void pointer_input(const char *op,int x,int y){
+    if(!pointer_resource || !focus_surface ||
+       wl_resource_get_client(pointer_resource)!=wl_resource_get_client(focus_surface))return;
+    int changed=0;
+    if(pointer_focus!=focus_surface){
+        if(pointer_focus)wl_resource_post_event(pointer_resource,1,wl_display_next_serial(server),pointer_focus);
+        wl_resource_post_event(pointer_resource,0,wl_display_next_serial(server),focus_surface,x*256,y*256);
+        pointer_focus=focus_surface;changed=1;
+    }
+    uint32_t when=(uint32_t)now_ms();
+    if(!strcmp(op,"tap") || !strcmp(op,"down") || !strcmp(op,"move") || !strcmp(op,"up")){
+        wl_resource_post_event(pointer_resource,2,when,x*256,y*256);
+        changed=1;
+    }
+    if((!strcmp(op,"tap") || !strcmp(op,"down")) && !pointer_down){
+        wl_resource_post_event(pointer_resource,3,wl_display_next_serial(server),when,0x110u,1u);
+        pointer_down=1;changed=1;
+    }
+    if(changed)pointer_frame();
+    if((!strcmp(op,"tap") || !strcmp(op,"up")) && pointer_down){
+        wl_resource_post_event(pointer_resource,3,wl_display_next_serial(server),when,0x110u,0u);
+        pointer_down=0;pointer_frame();
+    }
 }
 static void input_line(int fd,char *line){
     int x,y;char op[12];unsigned sequence=0;
@@ -348,6 +396,7 @@ static void input_line(int fd,char *line){
         if(keyboard_focus!=focus_surface){
             if(keyboard_focus)wl_resource_post_event(keyboard_resource,2,wl_display_next_serial(server),keyboard_focus);
             wl_resource_post_event(keyboard_resource,1,wl_display_next_serial(server),focus_surface,&keys);
+            wl_resource_post_event(keyboard_resource,4,wl_display_next_serial(server),0u,0u,0u,0u);
             keyboard_focus=focus_surface;
         }
         wl_resource_post_event(keyboard_resource,3,wl_display_next_serial(server),(uint32_t)now_ms(),(uint32_t)x,(uint32_t)y);
@@ -357,7 +406,9 @@ static void input_line(int fd,char *line){
         char ack[64];int size=snprintf(ack,sizeof(ack),"ACK %u\n",sequence);
         if(fd>=0)write(fd,ack,size);
     }
-    if(sscanf(line,"%11s %d %d",op,&x,&y)==3 && x>=0 && x<output_width && y>=0 && y<output_height && touch_resource && focus_surface){
+    if(sscanf(line,"%11s %d %d",op,&x,&y)==3 && x>=0 && x<output_width && y>=0 && y<output_height && focus_surface){
+      pointer_input(op,x,y);
+      if(touch_resource){
       if(!strcmp(op,"tap") || (!strcmp(op,"down") && !touch_down)){
         wl_resource_post_event(touch_resource,0,wl_display_next_serial(server),(uint32_t)now_ms(),focus_surface,0,x*256,y*256);
         wl_resource_post_event(touch_resource,3);
@@ -371,6 +422,7 @@ static void input_line(int fd,char *line){
         wl_resource_post_event(touch_resource,1,wl_display_next_serial(server),(uint32_t)now_ms(),0);
         wl_resource_post_event(touch_resource,3);
         touch_down=0;
+      }
       }
         if(strcmp(op,"move") && strcmp(op,"ping")){printf("TOUCH_%s %d %d\n",op,x,y);fflush(stdout);}
     }
@@ -399,7 +451,7 @@ int main(int argc,char **argv){
     wl_global_create(d,&wl_shell_interface,1,NULL,bind_shell);
     wl_global_create(d,&wl_output_interface,2,NULL,bind_output);
     wl_global_create(d,&wl_subcompositor_interface,1,NULL,bind_subcompositor);
-    wl_global_create(d,&wl_seat_interface,1,NULL,bind_seat);
+    wl_global_create(d,&wl_seat_interface,5,NULL,bind_seat);
     wl_global_create(d,&eagle_shm_interface,1,NULL,bind_eagle_shm);
     const char *fifo="/dev/x2dii-input";
     unlink(fifo);if(mkfifo(fifo,0600)<0){perror("input FIFO");return 1;}

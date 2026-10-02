@@ -35,7 +35,29 @@ sleep 1
 mock=$!
 sleep 1
 if [ "$1" = app ]; then
-    /devkit/app/hello &
+    export DEVKIT_WIDTH=640 DEVKIT_HEIGHT=480
+    app_entry=${2:-app/hello}
+    case "$app_entry" in
+        /*|*..*|*[!a-zA-Z0-9_./+-]*) echo X2DII_UI_FAILED; exit 1 ;;
+    esac
+    if [ ! -f "/devkit/$app_entry" ]; then echo X2DII_UI_FAILED; exit 1; fi
+    app_lib=${3:-}
+    if [ -n "$app_lib" ]; then
+        case "$app_lib" in
+            apps/*/*/lib) ;;
+            *) echo X2DII_UI_FAILED; exit 1 ;;
+        esac
+        case "$app_entry" in
+            "${app_lib%/lib}"/*) ;;
+            *) echo X2DII_UI_FAILED; exit 1 ;;
+        esac
+        app_root=${app_lib%/lib}
+        (cd "/devkit/$app_root" &&
+            export LD_LIBRARY_PATH="/devkit/$app_lib:$LD_LIBRARY_PATH" &&
+            exec "/devkit/$app_entry") &
+    else
+        "/devkit/$app_entry" &
+    fi
 else
     cp /devkit/camera/victory-gui-software /usr/bin/victory-gui-software
     chmod 755 /usr/bin/victory-gui-software

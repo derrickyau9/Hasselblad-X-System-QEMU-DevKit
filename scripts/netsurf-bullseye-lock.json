@@ -1,0 +1,294 @@
+{
+  "source": "https://deb.debian.org/debian/dists/bullseye/main/binary-armhf/Packages.xz",
+  "suite": "Debian Bullseye",
+  "architecture": "armhf + all",
+  "packages": {
+    "ca-certificates": {
+      "version": "20210119",
+      "url": "https://deb.debian.org/debian/pool/main/c/ca-certificates/ca-certificates_20210119_all.deb",
+      "sha256": "b2d488ad4d8d8adb3ba319fc9cb2cf9909fc42cb82ad239a26c570a2e749c389",
+      "size": 158288,
+      "depends": "openssl (>= 1.1.1), debconf (>= 0.5) | debconf-2.0"
+    },
+    "fonts-dejavu": {
+      "version": "2.37-2",
+      "url": "https://deb.debian.org/debian/pool/main/f/fonts-dejavu/fonts-dejavu_2.37-2_all.deb",
+      "sha256": "bc37ad3ab7b8e7adc7fb027c1cf4a27e6ca908a7ae4a511d095f6d97552ba724",
+      "size": 32604,
+      "depends": "fonts-dejavu-core, fonts-dejavu-extra"
+    },
+    "fonts-dejavu-extra": {
+      "version": "2.37-2",
+      "url": "https://deb.debian.org/debian/pool/main/f/fonts-dejavu/fonts-dejavu-extra_2.37-2_all.deb",
+      "sha256": "1cf94d3e217deb067e0ffd3282644fdf13f0dcbbaa0966015eebcac8bfa6dc8f",
+      "size": 2070396,
+      "depends": "fonts-dejavu-core"
+    },
+    "fonts-wqy-microhei": {
+      "version": "0.2.0-beta-3.1",
+      "url": "https://deb.debian.org/debian/pool/main/f/fonts-wqy-microhei/fonts-wqy-microhei_0.2.0-beta-3.1_all.deb",
+      "sha256": "239163df984eea5c9da3b551aee374936222cdbd67f1a1be3cdcf3d76143ad66",
+      "size": 1605712,
+      "depends": ""
+    },
+    "libasound2": {
+      "version": "1.2.4-1.1",
+      "url": "https://deb.debian.org/debian/pool/main/a/alsa-lib/libasound2_1.2.4-1.1_armhf.deb",
+      "sha256": "2b18bdd309f0f127c2ab4829028c7ad89ac27bb3bf42cfc118a5701225131528",
+      "size": 310300,
+      "depends": "libasound2-data (>= 1.2.4-1.1), libc6 (>= 2.29)"
+    },
+    "libasound2-data": {
+      "version": "1.2.4-1.1",
+      "url": "https://deb.debian.org/debian/pool/main/a/alsa-lib/libasound2-data_1.2.4-1.1_all.deb",
+      "sha256": "76211f5f201ad1069b95d047863e0c1b51d8400c874b59e00f24f31f972b4036",
+      "size": 38248,
+      "depends": ""
+    },
+    "libasyncns0": {
+      "version": "0.8-6+b2",
+      "url": "https://deb.debian.org/debian/pool/main/liba/libasyncns/libasyncns0_0.8-6+b2_armhf.deb",
+      "sha256": "d9e2a603cda5707a64f3d64e828dba7539b4631856bd0ff2bd5df41df4f34b78",
+      "size": 11904,
+      "depends": "libc6 (>= 2.28)"
+    },
+    "libcaca0": {
+      "version": "0.99.beta19-2.2",
+      "url": "https://deb.debian.org/debian/pool/main/libc/libcaca/libcaca0_0.99.beta19-2.2_armhf.deb",
+      "sha256": "511fbdc2e6327823f0a57dd7f055cab819df77d91191f83d8b0f529555a51752",
+      "size": 335040,
+      "depends": "libc6 (>= 2.7), libgcc-s1 (>= 3.5), libncursesw6 (>= 6), libslang2 (>= 2.2.4), libstdc++6 (>= 4.1.1), libtinfo6 (>= 6), zlib1g (>= 1:1.1.4)"
+    },
+    "libcurl4": {
+      "version": "7.74.0-1.3+deb11u13",
+      "url": "https://deb.debian.org/debian/pool/main/c/curl/libcurl4_7.74.0-1.3+deb11u13_armhf.deb",
+      "sha256": "1345cdae80565209f0c6d23311b117054e1f45815e6f59f03747c62c56f7df6d",
+      "size": 314128,
+      "depends": "libbrotli1 (>= 0.6.0), libc6 (>= 2.28), libgssapi-krb5-2 (>= 1.17), libidn2-0 (>= 0.6), libldap-2.4-2 (>= 2.4.7), libnghttp2-14 (>= 1.12.0), libpsl5 (>= 0.16.0), librtmp1 (>= 2.4+20131018.git79459a2-3~), libssh2-1 (>= 1.7.0), libssl1.1 (>= 1.1.1), zlib1g (>= 1:1.1.4)"
+    },
+    "libflac8": {
+      "version": "1.3.3-2+deb11u2",
+      "url": "https://deb.debian.org/debian/pool/main/f/flac/libflac8_1.3.3-2+deb11u2_armhf.deb",
+      "sha256": "73674a2e5ffc4b0ec20b715cd5f785e9e5b92d6b9c1852da4fdd33a0b14f8f03",
+      "size": 89224,
+      "depends": "libc6 (>= 2.29), libogg0 (>= 1.0rc3)"
+    },
+    "libgnutls30": {
+      "version": "3.7.1-5+deb11u5",
+      "url": "https://deb.debian.org/debian/pool/main/g/gnutls28/libgnutls30_3.7.1-5+deb11u5_armhf.deb",
+      "sha256": "bda8ac912431af9a59d5218279bb13bbc0dbcef2baa001de539cb7fd79df8d9b",
+      "size": 1280196,
+      "depends": "libgmp10 (>= 2:6.0.0), libc6 (>= 2.28), libhogweed6 (>= 3.6), libidn2-0 (>= 2.0.0), libnettle8 (>= 3.7~), libp11-kit0 (>= 0.23.18.1), libtasn1-6 (>= 4.14), libunistring2 (>= 0.9.7)"
+    },
+    "libhogweed6": {
+      "version": "3.7.3-1",
+      "url": "https://deb.debian.org/debian/pool/main/n/nettle/libhogweed6_3.7.3-1_armhf.deb",
+      "sha256": "712b290612c826b7d0f943fbe7eb762cbb422386526396b3c4586c056b7ca1c6",
+      "size": 308444,
+      "depends": "libc6 (>= 2.4), libgmp10 (>= 2:6.1.0), libnettle8"
+    },
+    "libidn2-0": {
+      "version": "2.3.0-5",
+      "url": "https://deb.debian.org/debian/pool/main/libi/libidn2/libidn2-0_2.3.0-5_armhf.deb",
+      "sha256": "e20f1e06123f749fe2ac46ffe32e16c0acd5c1d0667e1b2a9df38c756571347d",
+      "size": 83392,
+      "depends": "libc6 (>= 2.4), libunistring2 (>= 0.9.7)"
+    },
+    "libldap-2.4-2": {
+      "version": "2.4.57+dfsg-3+deb11u1",
+      "url": "https://deb.debian.org/debian/pool/main/o/openldap/libldap-2.4-2_2.4.57+dfsg-3+deb11u1_armhf.deb",
+      "sha256": "b6f51d40822f84cbe39ba3480bb8252b990e899e5e1a9478eaf97e5a34e4ebd0",
+      "size": 210216,
+      "depends": "libc6 (>= 2.28), libgnutls30 (>= 3.7.0), libsasl2-2 (>= 2.1.27+dfsg)"
+    },
+    "liblzo2-2": {
+      "version": "2.10-2",
+      "url": "https://deb.debian.org/debian/pool/main/l/lzo2/liblzo2-2_2.10-2_armhf.deb",
+      "sha256": "2781d0fd6c8073bc4c4f44b9ebb2b6aeadb620a3769ac559ef1b48734f70468a",
+      "size": 50724,
+      "depends": "libc6 (>= 2.4)"
+    },
+    "libncursesw6": {
+      "version": "6.2+20201114-2+deb11u2",
+      "url": "https://deb.debian.org/debian/pool/main/n/ncurses/libncursesw6_6.2+20201114-2+deb11u2_armhf.deb",
+      "sha256": "4a8c6ec45ae8f72ddd64352defc022fefbb2965daddbeac33543b7a2b87e89a4",
+      "size": 106544,
+      "depends": "libtinfo6 (= 6.2+20201114-2+deb11u2), libc6 (>= 2.7)"
+    },
+    "libnettle8": {
+      "version": "3.7.3-1",
+      "url": "https://deb.debian.org/debian/pool/main/n/nettle/libnettle8_3.7.3-1_armhf.deb",
+      "sha256": "233dce7ed44907c63850706108bda212adf4da7822c72af2e3f08d176c7beb46",
+      "size": 284000,
+      "depends": "libc6 (>= 2.17)"
+    },
+    "libnghttp2-14": {
+      "version": "1.43.0-1+deb11u1",
+      "url": "https://deb.debian.org/debian/pool/main/n/nghttp2/libnghttp2-14_1.43.0-1+deb11u1_armhf.deb",
+      "sha256": "c1e0024fb0b809306cb0872bb309addf97b31398b89fc737545e4c18598fc6ad",
+      "size": 66724,
+      "depends": "libc6 (>= 2.17)"
+    },
+    "libogg0": {
+      "version": "1.3.4-0.1",
+      "url": "https://deb.debian.org/debian/pool/main/libo/libogg/libogg0_1.3.4-0.1_armhf.deb",
+      "sha256": "2d137d2c7ab753771780ec0ba7043f863f9a8a78b33aff39fb97eed3775518b4",
+      "size": 24580,
+      "depends": "libc6 (>= 2.4)"
+    },
+    "libopus0": {
+      "version": "1.3.1-0.1",
+      "url": "https://deb.debian.org/debian/pool/main/o/opus/libopus0_1.3.1-0.1_armhf.deb",
+      "sha256": "0b52e151c41470107e5652e52b3b3dbf60c91c5f7dd090068772b857ac146804",
+      "size": 166112,
+      "depends": "libc6 (>= 2.29)"
+    },
+    "libp11-kit0": {
+      "version": "0.23.22-1",
+      "url": "https://deb.debian.org/debian/pool/main/p/p11-kit/libp11-kit0_0.23.22-1_armhf.deb",
+      "sha256": "b881f48cf4454aa7ae7179a4ec55ec99407e52e3d68952d1d99bd8411b828266",
+      "size": 316680,
+      "depends": "libc6 (>= 2.28), libffi7 (>= 3.3~20180313)"
+    },
+    "libpsl5": {
+      "version": "0.21.0-1.2",
+      "url": "https://deb.debian.org/debian/pool/main/libp/libpsl/libpsl5_0.21.0-1.2_armhf.deb",
+      "sha256": "0850c17c10c3dfb44f3d11738297159465aaec08b5b84f55654ba00bff8cbb68",
+      "size": 56140,
+      "depends": "libidn2-0 (>= 0.16), libc6 (>= 2.4), libunistring2 (>= 0.9.7)"
+    },
+    "libpulse0": {
+      "version": "14.2-2",
+      "url": "https://deb.debian.org/debian/pool/main/p/pulseaudio/libpulse0_14.2-2_armhf.deb",
+      "sha256": "495ed7c7a6765108019c1aa2e82e3b444ba0c649cb0f7b5f1b1242f068be3e9e",
+      "size": 259412,
+      "depends": "libasyncns0 (>= 0.3), libc6 (>= 2.29), libdbus-1-3 (>= 1.9.14), libsndfile1 (>= 1.0.20), libsystemd0, libwrap0 (>= 7.6-4~), libxcb1"
+    },
+    "librtmp1": {
+      "version": "2.4+20151223.gitfa8646d.1-2+b2",
+      "url": "https://deb.debian.org/debian/pool/main/r/rtmpdump/librtmp1_2.4+20151223.gitfa8646d.1-2+b2_armhf.deb",
+      "sha256": "6ab3a47f57ce868e8f4041b10bdf867f247e9846f647ea5eb5b01f34d6a6f7aa",
+      "size": 55220,
+      "depends": "libc6 (>= 2.7), libgmp10, libgnutls30 (>= 3.6.14), libhogweed6, libnettle8, zlib1g (>= 1:1.1.4)"
+    },
+    "libsasl2-2": {
+      "version": "2.1.27+dfsg-2.1+deb11u1",
+      "url": "https://deb.debian.org/debian/pool/main/c/cyrus-sasl2/libsasl2-2_2.1.27+dfsg-2.1+deb11u1_armhf.deb",
+      "sha256": "68b11efafd31d3698d78dcde474d61350ed2dbc6df73988cf395069d327ceae2",
+      "size": 99220,
+      "depends": "libsasl2-modules-db (>= 2.1.27+dfsg-2.1+deb11u1), libc6 (>= 2.28)"
+    },
+    "libsasl2-modules-db": {
+      "version": "2.1.27+dfsg-2.1+deb11u1",
+      "url": "https://deb.debian.org/debian/pool/main/c/cyrus-sasl2/libsasl2-modules-db_2.1.27+dfsg-2.1+deb11u1_armhf.deb",
+      "sha256": "05000cc9717320be445617da5c498a87817784a38493077a012281dbe056a6df",
+      "size": 67716,
+      "depends": "libc6 (>= 2.4), libdb5.3"
+    },
+    "libsdl1.2debian": {
+      "version": "1.2.15+dfsg2-6",
+      "url": "https://deb.debian.org/debian/pool/main/libs/libsdl1.2/libsdl1.2debian_1.2.15+dfsg2-6_armhf.deb",
+      "sha256": "b5a2e91d518a3e11c83572ff65cf80ae58fb984d198c7ecb4d004cfc0fc74f6f",
+      "size": 166412,
+      "depends": "libasound2 (>= 1.0.16), libc6 (>= 2.29), libcaca0 (>= 0.99.beta17-1), libpulse0 (>= 0.99.1), libx11-6 (>= 2:1.4.99.1), libxext6"
+    },
+    "libslang2": {
+      "version": "2.3.2-5",
+      "url": "https://deb.debian.org/debian/pool/main/s/slang2/libslang2_2.3.2-5_armhf.deb",
+      "sha256": "de9364692e5b7ec0674c6b5fd39daf071ec6835736df60d49b160bbd4ba87373",
+      "size": 469980,
+      "depends": "libc6 (>= 2.29)"
+    },
+    "libsndfile1": {
+      "version": "1.0.31-2",
+      "url": "https://deb.debian.org/debian/pool/main/libs/libsndfile/libsndfile1_1.0.31-2_armhf.deb",
+      "sha256": "c2d48fc00b556a686182425ecec4b49a804f5c90975cc902902d7e3da2fd6e20",
+      "size": 174272,
+      "depends": "libc6 (>= 2.29), libflac8 (>= 1.3.0), libogg0 (>= 1.3.0), libopus0 (>= 1.1), libvorbis0a (>= 1.2.3), libvorbisenc2 (>= 1.2.3)"
+    },
+    "libssh2-1": {
+      "version": "1.9.0-2+deb11u1",
+      "url": "https://deb.debian.org/debian/pool/main/libs/libssh2/libssh2-1_1.9.0-2+deb11u1_armhf.deb",
+      "sha256": "98260717af829a4a51c7b3669564969a29fb6cf702360688eeec5be3c6cec050",
+      "size": 143116,
+      "depends": "libc6 (>= 2.28), libgcrypt20 (>= 1.8.0), zlib1g (>= 1:1.1.4)"
+    },
+    "libtasn1-6": {
+      "version": "4.16.0-2+deb11u1",
+      "url": "https://deb.debian.org/debian/pool/main/libt/libtasn1-6/libtasn1-6_4.16.0-2+deb11u1_armhf.deb",
+      "sha256": "1ddf8f110cc489f93f928236feb39ea7957ac6bc5570a138e9bf2e521d6be3c7",
+      "size": 50368,
+      "depends": "libc6 (>= 2.4)"
+    },
+    "libtinfo6": {
+      "version": "6.2+20201114-2+deb11u2",
+      "url": "https://deb.debian.org/debian/pool/main/n/ncurses/libtinfo6_6.2+20201114-2+deb11u2_armhf.deb",
+      "sha256": "6973dca97fae75e87a6c5898c8aad1cad37e888ef995d89a31c302dbe12dcb57",
+      "size": 328424,
+      "depends": "libc6 (>= 2.17)"
+    },
+    "libunistring2": {
+      "version": "0.9.10-4",
+      "url": "https://deb.debian.org/debian/pool/main/libu/libunistring/libunistring2_0.9.10-4_armhf.deb",
+      "sha256": "dad576f7d8bfbc39623828b3f9d2957dcc88f6e735e9bda3a9ced688636f4e46",
+      "size": 373556,
+      "depends": "libc6 (>= 2.7)"
+    },
+    "libvncserver1": {
+      "version": "0.9.13+dfsg-2+deb11u1",
+      "url": "https://deb.debian.org/debian/pool/main/libv/libvncserver/libvncserver1_0.9.13+dfsg-2+deb11u1_armhf.deb",
+      "sha256": "fd73b0059fa92b8367f0a92905011c476e160eefbd9babc3325a8944bc32ca44",
+      "size": 217116,
+      "depends": "libc6 (>= 2.28), libgcrypt20 (>= 1.8.0), libgnutls30 (>= 3.7.0), libjpeg62-turbo (>= 1.3.1), liblzo2-2 (>= 2.02), zlib1g (>= 1:1.1.4)"
+    },
+    "libvorbis0a": {
+      "version": "1.3.7-1",
+      "url": "https://deb.debian.org/debian/pool/main/libv/libvorbis/libvorbis0a_1.3.7-1_armhf.deb",
+      "sha256": "74530e3889e04cab08751aad1f53f510f9db63077bb32bcaff6748bc23d30d45",
+      "size": 82964,
+      "depends": "libc6 (>= 2.29), libogg0 (>= 1.1.0)"
+    },
+    "libvorbisenc2": {
+      "version": "1.3.7-1",
+      "url": "https://deb.debian.org/debian/pool/main/libv/libvorbis/libvorbisenc2_1.3.7-1_armhf.deb",
+      "sha256": "bf66d75e79dec938ddbe30def464ddecae3d56c8310ead3959604d79ac3f32f4",
+      "size": 74360,
+      "depends": "libc6 (>= 2.4), libvorbis0a (= 1.3.7-1)"
+    },
+    "libwrap0": {
+      "version": "7.6.q-31",
+      "url": "https://deb.debian.org/debian/pool/main/t/tcp-wrappers/libwrap0_7.6.q-31_armhf.deb",
+      "sha256": "12c3a7e292a5665950ab8e8e2c20f19627f12f653d244137a7bf5f147dcc3d1a",
+      "size": 56476,
+      "depends": "libc6 (>= 2.11), libnsl2 (>= 1.0)"
+    },
+    "libxext6": {
+      "version": "2:1.3.3-1.1",
+      "url": "https://deb.debian.org/debian/pool/main/libx/libxext/libxext6_1.3.3-1.1_armhf.deb",
+      "sha256": "6248b14b7cda4f44be1ab8b14afff919bfafd2d285aed9479cc6055f5cf56728",
+      "size": 47764,
+      "depends": "libc6 (>= 2.4), libx11-6 (>= 2:1.6.0)"
+    },
+    "netsurf-common": {
+      "version": "3.10-1",
+      "url": "https://deb.debian.org/debian/pool/main/n/netsurf/netsurf-common_3.10-1_all.deb",
+      "sha256": "cf63515c89b3473827348bb17f90528dd37dba8583b9b6d504763d065d83f31a",
+      "size": 164160,
+      "depends": "ca-certificates, fonts-dejavu"
+    },
+    "netsurf-fb": {
+      "version": "3.10-1+b1",
+      "url": "https://deb.debian.org/debian/pool/main/n/netsurf/netsurf-fb_3.10-1+b1_armhf.deb",
+      "sha256": "d237e9fb80b5c8207f288c456c1ce0775efeb43f48843a0733072ff146ce8eb5",
+      "size": 1028640,
+      "depends": "libc6 (>= 2.29), libcurl4 (>= 7.56.1), libexpat1 (>= 2.0.1), libfreetype6 (>= 2.3.5), libjpeg62-turbo (>= 1.3.1), libpng16-16 (>= 1.6.2-1), libsdl1.2debian (>= 1.2.11), libssl1.1 (>= 1.1.1), libvncserver1 (>= 0.9.10), libwayland-client0 (>= 1.9.91), libxcb-icccm4 (>= 0.4.1), libxcb-image0 (>= 0.2), libxcb-keysyms1 (>= 0.4.0), libxcb-shm0, libxcb-util1 (>= 0.4.0), libxcb1, zlib1g (>= 1:1.1.4), netsurf-common (= 3.10-1)"
+    },
+    "openssl": {
+      "version": "1.1.1w-0+deb11u1",
+      "url": "https://deb.debian.org/debian/pool/main/o/openssl/openssl_1.1.1w-0+deb11u1_armhf.deb",
+      "sha256": "4cad3a65f247788956d32d5b12da16b1779fd6eec455aa52d953c9251c6ab949",
+      "size": 834648,
+      "depends": "libc6 (>= 2.15), libssl1.1 (>= 1.1.1)"
+    }
+  }
+}

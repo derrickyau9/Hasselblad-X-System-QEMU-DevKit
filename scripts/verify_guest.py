@@ -13,6 +13,8 @@ from devkit.application import Window
 p = argparse.ArgumentParser()
 p.add_argument('--home', type=Path, required=True)
 p.add_argument('--app', action='store_true')
+p.add_argument('--network', action='store_true', help='Enable guest networking for X2D II ARM64 app sessions only')
+p.add_argument('--package', help='Installed guest package as ID@version; requires --app')
 p.add_argument('--key', type=int, choices=range(1,6), help='Press virtual F1–F5 before capture')
 p.add_argument('--model', choices=['x1d','x1dii','907x50c','x2d','x2dii'])
 p.add_argument('--tap',type=int,nargs=2,metavar=('X','Y'),help='Tap a specific menu control after the optional key')
@@ -31,6 +33,22 @@ if args.model:
     index=w.model_choice.findData(args.model)
     if index<0: raise SystemExit('Selected firmware cannot run this model')
     w.model_choice.setCurrentIndex(index)
+if args.package:
+    if not args.app or '@' not in args.package:
+        raise SystemExit('--package requires --app and ID@version')
+    package_key=tuple(args.package.rsplit('@',1))
+    for index in range(w.app_choice.count()):
+        if w.app_choice.itemData(index)==package_key:
+            w.app_choice.setCurrentIndex(index)
+            break
+    else:
+        raise SystemExit('Package is not installed for this firmware model and ABI')
+if args.network:
+    if not args.app:
+        raise SystemExit('--network requires --app')
+    if not w.app_network.isEnabled():
+        raise SystemExit('--network is verified only for X2D II ARM64 app sessions')
+    w.app_network.setChecked(True)
 w.error = lambda message: (print('FAILED:', message, flush=True), QTimer.singleShot(0,lambda:app.exit(1)))
 w.show()
 result = {'running': False}

@@ -2,6 +2,8 @@ import socket
 import struct
 import time
 from pathlib import Path
+import pytest
+from devkit.core import write_json
 from devkit.guest.prepare import command
 from devkit.guest.frame_stream import FrameStream
 
@@ -19,6 +21,24 @@ def test_guest_has_no_external_network_or_host_device_access(tmp_path):
     assert not any('usb-host' in arg or 'hostfwd' in arg or 'PhysicalDrive' in arg for arg in args)
     channels = [args[n+1] for n,a in enumerate(args) if a in ('-chardev','-serial')]
     assert all('127.0.0.1' in channel for channel in channels)
+
+
+def test_optional_network_requires_x2dii_app_and_uses_virtio_net(tmp_path):
+    runtime = {'qemu': 'C:/runtime/qemu', 'image': 'C:/runtime/image'}
+    write_json(tmp_path / 'device.json', {'model': 'x2dii', 'abi': 'arm64'})
+    args = command(tmp_path, runtime, 41001, 41002, 41003, network=True, mode='app')
+    assert '-nic' not in args
+    assert args[args.index('-netdev') + 1] == 'user,id=devkitnet'
+    assert args[args.index('-netdev') + 3] == 'virtio-net-device,netdev=devkitnet'
+    # Existing imported X2D II libraries can predate the explicit ABI field.
+    write_json(tmp_path / 'device.json', {'model': 'x2dii'})
+    assert '-netdev' in command(tmp_path, runtime, 41001, 41002, 41003, network=True, mode='app')
+    with pytest.raises(ValueError, match='only for X2D II ARM64'):
+        command(tmp_path, runtime, 41001, 41002, 41003, network=True, mode='live')
+    for model, abi in [('x2d', 'arm64'), ('x1dii', 'arm32'), ('x1d', 'linux-arm32')]:
+        write_json(tmp_path / 'device.json', {'model': model, 'abi': abi})
+        with pytest.raises(ValueError, match='only for X2D II ARM64'):
+            command(tmp_path, runtime, 41001, 41002, 41003, network=True, mode='app')
 
 def test_invalid_frame_fails_without_allocating_pixels(tmp_path):
     a,b = socket.socketpair(); b.settimeout(.1)

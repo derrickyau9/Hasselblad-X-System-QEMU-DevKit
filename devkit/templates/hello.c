@@ -1,4 +1,4 @@
-/* MIT. A small Android ARM64 wl_shm app for the local DevKit guest. */
+/* MIT. A small wl_shm app for the local DevKit guest. */
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -42,40 +42,46 @@ static const unsigned char glyphs[7][7] = {
     {17,17,10,4,10,17,17}, {14,17,1,2,4,8,31},
     {30,17,17,17,17,17,30}
 };
-static void title(uint32_t *pixels, const char *text, int x, int y) {
+static void title(uint32_t *pixels, int width, const char *text, int x, int y) {
     const char *alphabet="HELOX2D";
     for (;*text;++text,x+=60) {
         const char *g=strchr(alphabet,*text); if (!g) continue;
         for (int row=0;row<7;row++) for (int col=0;col<5;col++)
             if (glyphs[g-alphabet][row] & (1<<(4-col)))
                 for (int dy=0;dy<8;dy++) for (int dx=0;dx<8;dx++)
-                    pixels[(y+row*8+dy)*1024+x+col*8+dx]=0xffeaddff;
+                    pixels[(y+row*8+dy)*width+x+col*8+dx]=0xffeaddff;
     }
 }
 int main(void) {
+    int width=1024, height=768;
+    const char *configured_width=getenv("DEVKIT_WIDTH"), *configured_height=getenv("DEVKIT_HEIGHT");
+    if (configured_width && configured_height) {
+        int w=atoi(configured_width), h=atoi(configured_height);
+        if (w>=320 && w<=2048 && h>=240 && h<=1536) {width=w;height=h;}
+    }
     struct wl_display *display=wl_display_connect(NULL); if (!display) {perror("Wayland");return 1;}
     struct wl_proxy *registry=wl_proxy_marshal_constructor((struct wl_proxy *)display,1,&wl_registry_interface,NULL);
     void (*registry_events[])(void)={(void(*)(void))added,(void(*)(void))removed};
     wl_proxy_add_listener(registry,registry_events,NULL); wl_display_roundtrip(display);
     if (!compositor || !shell || !shm) {fputs("Missing compositor globals\n",stderr);return 2;}
     void (*shm_events[])(void)={(void(*)(void))format}; wl_proxy_add_listener(shm,shm_events,NULL);
-    const size_t bytes=1024*768*4;
+    const size_t bytes=(size_t)width*height*4;
     char path[]="/dev/devkit-shm-XXXXXX"; int fd=mkstemp(path);
     if (fd<0 || ftruncate(fd,bytes)) return 3;
     unlink(path);
     uint32_t *pixels=mmap(NULL,bytes,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0); if(pixels==MAP_FAILED)return 4;
-    for (int y=0;y<768;y++) for(int x=0;x<1024;x++)
-        pixels[y*1024+x]=(x>60 && x<964 && y>80 && y<688)?0xff211f26:0xff141218;
-    for(int y=510;y<518;y++)for(int x=150;x<874;x++)pixels[y*1024+x]=0xffd0bcff;
-    title(pixels,"HELLO X2D",245,340);
+    for (int y=0;y<height;y++) for(int x=0;x<width;x++)
+        pixels[y*width+x]=(x>width/16 && x<width*15/16 && y>height/10 && y<height*9/10)?0xff211f26:0xff141218;
+    for(int y=height*2/3;y<height*2/3+8;y++)for(int x=width/7;x<width*6/7;x++)pixels[y*width+x]=0xffd0bcff;
+    title(pixels,width,"HELLO",(width-5*60)/2,(height-56)/2);
     struct wl_proxy *pool=wl_proxy_marshal_constructor(shm,0,&wl_shm_pool_interface,NULL,fd,(int)bytes);
-    struct wl_proxy *buffer=wl_proxy_marshal_constructor(pool,0,&wl_buffer_interface,NULL,0,1024,768,4096,1);
+    struct wl_proxy *buffer=wl_proxy_marshal_constructor(pool,0,&wl_buffer_interface,NULL,0,width,height,width*4,1);
     void (*buffer_events[])(void)={(void(*)(void))released};wl_proxy_add_listener(buffer,buffer_events,NULL);
     struct wl_proxy *surface=wl_proxy_marshal_constructor(compositor,0,&wl_surface_interface,NULL);
     struct wl_proxy *ss=wl_proxy_marshal_constructor(shell,0,&wl_shell_surface_interface,NULL,surface);
     void (*shell_events[])(void)={(void(*)(void))ping,(void(*)(void))configure,(void(*)(void))popup};
     wl_proxy_add_listener(ss,shell_events,NULL); wl_proxy_marshal(ss,3);
-    wl_proxy_marshal(surface,1,buffer,0,0);wl_proxy_marshal(surface,2,0,0,1024,768);wl_proxy_marshal(surface,6);
+    wl_proxy_marshal(surface,1,buffer,0,0);wl_proxy_marshal(surface,2,0,0,width,height);wl_proxy_marshal(surface,6);
     wl_display_flush(display);puts("DEVKIT_HELLO_READY");fflush(stdout);
     while(wl_display_dispatch(display)>=0) {}
     wl_display_disconnect(display); munmap(pixels,bytes);close(fd);return 0;

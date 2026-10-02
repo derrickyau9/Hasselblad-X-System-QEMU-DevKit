@@ -17,6 +17,7 @@ subprocess.run([sys.executable,'-m','PyInstaller','--noconfirm','--clean','--win
     '--add-data','devkit/templates;devkit/templates','--add-data','devkit/guest/camera_run.sh;devkit/guest',
     '--add-data','devkit/guest/dbus-local.conf;devkit/guest','--add-data','devkit/downloads.json;devkit',
     '--add-data','devkit/guest/legacy_run.sh;devkit/guest','--add-data','devkit/guest/linux_ui.sh;devkit/guest',
+    '--add-data','devkit/guest/network.sh;devkit/guest',
     '--add-data','devkit/linux-downloads.json;devkit',
     'run_app.py'],cwd=root,check=True)
 output=root/'dist'/name

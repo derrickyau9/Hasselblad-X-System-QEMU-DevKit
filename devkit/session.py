@@ -8,7 +8,7 @@ import subprocess
 import time
 from PySide6.QtCore import QThread, Signal
 from .core import ASSETS, Task, Cancelled, GuestLock, read_json
-from .guest.prepare import prepare, command
+from .guest.prepare import prepare, command, network_supported
 from .guest.frame_stream import FrameStream
 from .models import model_id
 
@@ -18,10 +18,12 @@ class Session(QThread):
     phase = Signal(str)
     failed = Signal(str)
 
-    def __init__(self, device, runtime, mode='live'):
+    def __init__(self, device, runtime, mode='live', app_entry=None, network=False):
         super().__init__()
         self.device, self.runtime = device, runtime
         self.mode = mode
+        self.app_entry = app_entry
+        self.network = network
         self.task = Task(self.message.emit)
         self.frames = None
         self.commands, self.touches = queue.Queue(), queue.Queue(maxsize=512)
@@ -46,9 +48,15 @@ class Session(QThread):
             self.phase.emit('starting')
             lock = GuestLock(self.device)
             profile = read_json(self.device / 'device.json')
+            if self.network and not network_supported(profile, self.mode):
+                raise ValueError('QEMU networking is supported only for X2D II ARM64 third-party app sessions')
             legacy = profile.get('abi') == 'linux-arm32'
             run_script = 'legacy_run.sh' if legacy else 'camera_run.sh'
             (self.device / 'payload-stage/camera/run.sh').write_bytes((ASSETS / 'guest' / run_script).read_bytes().replace(b'\r\n', b'\n'))
+            if self.network:
+                (self.device / 'payload-stage/camera/network.sh').write_bytes((ASSETS / 'guest/network.sh').read_bytes().replace(b'\r\n', b'\n'))
+            else:
+                (self.device / 'payload-stage/camera/network.sh').unlink(missing_ok=True)
             if legacy:
                 from .linux_runtime import setup_linux
                 setup_linux(self.device,self.task)
@@ -71,7 +79,8 @@ class Session(QThread):
                     reservation.close()
             errors = (self.device / 'qemu.log').open('wb')
             log = (self.device / 'console.log').open('wb')
-            process = self.process = subprocess.Popen(command(self.device, self.runtime, *ports), stdout=errors,
+            process = self.process = subprocess.Popen(command(self.device, self.runtime, *ports,
+                         network=self.network, mode=self.mode), stdout=errors,
                         stderr=errors, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
             for attempt in range(100):
                 self.task.check()
@@ -103,7 +112,7 @@ class Session(QThread):
                 log.write(data); log.flush()
                 return data
 
-            def until(marker, seconds):
+            def until(marker, seconds, required=None):
                 buffer = bytearray()
                 end = time.monotonic() + seconds
                 while time.monotonic() < end:
@@ -113,7 +122,14 @@ class Session(QThread):
                     buffer.extend(received())
                     if b'X2DII_UI_FAILED' in buffer:
                         raise RuntimeError('Guest application failed to start; see console.log')
+                    if b'DEVKIT_NETWORK_FAILED:' in buffer:
+                        failure = bytes(buffer.split(b'DEVKIT_NETWORK_FAILED:', 1)[1])
+                        if b'\n' in failure:
+                            reason = failure.split(b'\n', 1)[0].decode(errors='replace').strip()
+                            raise RuntimeError(f'Optional QEMU network setup failed: {reason}; see console.log')
                     if marker in buffer:
+                        if required and required not in buffer:
+                            raise RuntimeError('Optional QEMU network setup did not confirm readiness; see console.log')
                         return
                     if len(buffer) > 262144:
                         del buffer[:131072]
@@ -133,8 +149,22 @@ class Session(QThread):
             for line in ['dmesg -n 1', 'stop zygote', 'stop zygote_secondary', 'stop surfaceflinger', 'stop vendor.hwcomposer-2-1',
                          'mkdir -p /mnt/x2dii', 'mount -t vfat /dev/block/vde1 /mnt/x2dii']:
                 send(line); until(b'console:/ #', 15)
+            if self.network:
+                self.message.emit('Configuring optional QEMU network / 配置虚拟机可选网络…')
+                send(f'sh /mnt/x2dii/camera/network.sh {int(time.time())}')
+                until(b'console:/ #', 45, required=b'DEVKIT_NETWORK_READY')
             self.message.emit('Starting guest app / 启动应用…' if self.mode == 'app' else 'Starting original camera UI / 启动原厂界面…')
-            send(f'sh /mnt/x2dii/camera/run.sh {self.mode} {model_id(profile)} &')
+            if self.mode == 'app' and self.app_entry:
+                from .packages import active_package
+                selected = active_package(self.device)
+                expected = f"apps/{selected['id']}/{selected['version']}/{selected['entry']}" if selected else None
+                if expected != self.app_entry:
+                    raise RuntimeError('Selected app changed before launch; select it again')
+                # Package path segments are ASCII tokens validated during installation.
+                app_lib = f"apps/{selected['id']}/{selected['version']}/lib"
+                send(f'sh /mnt/x2dii/camera/run.sh app {model_id(profile)} {expected} {app_lib} &')
+            else:
+                send(f'sh /mnt/x2dii/camera/run.sh {self.mode} {model_id(profile)} &')
             until(b'X2DII_UI_SESSION_READY', 300 if legacy else 150)
             deadline = time.monotonic() + 30
             while frames.latest is None and time.monotonic() < deadline:
