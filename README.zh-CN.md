@@ -1,8 +1,8 @@
-# Hasselblad X2D II QEMU DevKit
+# Hasselblad X System QEMU DevKit
 
 **Windows 原生工作台；也支持在 Apple Silicon Mac 上从源码运行：拖入官方固件，启动原厂界面，开发你的应用。**
 
-[English](README.md) · [下载 Windows 便携版](https://github.com/derrickyau9/Hasselblad-X2D-II-QEMU-DevKit/releases/latest) · [哈苏官方固件](https://www.hasselblad.com/zh-cn/x-system/firmware/)
+[English](README.md) · [下载 Windows 便携版](https://github.com/derrickyau9/Hasselblad-X-System-QEMU-DevKit/releases/latest) · [哈苏官方固件](https://www.hasselblad.com/zh-cn/x-system/firmware/)
 
 ![DevKit 工作台](docs/workbench.png)
 
@@ -75,8 +75,8 @@ X1D 首次启动额外下载约 78 MB 的 Debian ARMhf 运行库，之后可离�
 安装 Python **3.11+**，克隆仓库，双击 `Launch.cmd`。首次自动建立 `.venv` 并安装依赖。
 
 ```powershell
-git clone https://github.com/derrickyau9/Hasselblad-X2D-II-QEMU-DevKit.git
-cd Hasselblad-X2D-II-QEMU-DevKit
+git clone https://github.com/derrickyau9/Hasselblad-X-System-QEMU-DevKit.git
+cd Hasselblad-X-System-QEMU-DevKit
 .\Launch.cmd
 ```
 

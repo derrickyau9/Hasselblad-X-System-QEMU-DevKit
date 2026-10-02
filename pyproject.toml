@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "hasselblad-x2dii-qemu-devkit"
+name = "hasselblad-x-system-qemu-devkit"
 version = "0.2.0"
 description = "A native Windows workbench for local Hasselblad X System firmware UI development"
 requires-python = ">=3.11"
@@ -14,6 +14,7 @@ dependencies = ["PySide6==6.9.3", "cryptography==46.0.3", "pyelftools==0.33", "d
 dev = ["pytest==8.4.2", "pyinstaller==6.16.0"]
 
 [project.gui-scripts]
+x-system-devkit = "devkit.application:main"
 x2dii-devkit = "devkit.application:main"
 
 [tool.setuptools.packages.find]

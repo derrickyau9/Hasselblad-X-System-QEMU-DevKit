@@ -119,7 +119,7 @@ class Window(QMainWindow):
         self.devices = []; self.device = None
         self.last_frame = None
         self.closing = False
-        self.setWindowTitle('Hasselblad X2D II QEMU DevKit')
+        self.setWindowTitle('Hasselblad X System QEMU DevKit')
         cat_logo = QPixmap(str(ASSETS / 'assets' / 'cat-logo.jpg'))
         if not cat_logo.isNull():
             self.setWindowIcon(QIcon(cat_logo))
@@ -177,7 +177,7 @@ class Window(QMainWindow):
         self.pages.addWidget(p); return layout
 
     def make_library(self):
-        layout = self.page('Hasselblad X2D II QEMU DevKit', 'Hasselblad X2D II QEMU DevKit',
+        layout = self.page('Hasselblad X System QEMU DevKit', 'Hasselblad X System QEMU DevKit',
             'Bring your own firmware. Explore the original interface in a local QEMU guest.', '导入官方固件，在本地 QEMU 虚拟机中探索原厂界面。')
         self.drop = DropArea('', '')
         self.bind(self.drop.title.setText, '↓  Drop official firmware here', '↓  将官方固件拖到这里')
@@ -257,7 +257,7 @@ class Window(QMainWindow):
         card.addWidget(self.button('Open DevKit data folder', '打开 DevKit 数据目录', lambda: self.open_path(self.home)))
         card = self.card(layout); card.addWidget(self.label('Credits & scope', '致谢与范围', 'subtitle'))
         card.addWidget(self.label('Material theme adapted from Derrick Yao’s tsla-infotainment-lab (MIT). Powered by QEMU, Android, Qt for Python and 7-Zip. Firmware is supplied by you and remains local. Unaffiliated with Hasselblad.', 'Material 主题改编自 Derrick Yao 的 tsla-infotainment-lab（MIT）。基于 QEMU、Android、Qt for Python 和 7-Zip。固件由你提供并保留在本地。本项目与哈苏无隶属关系。', 'muted'))
-        card.addWidget(self.button('View source & documentation ↗', '查看源码与文档 ↗', lambda: QDesktopServices.openUrl(QUrl('https://github.com/derrickyau9/Hasselblad-X2D-II-QEMU-DevKit'))))
+        card.addWidget(self.button('View source & documentation ↗', '查看源码与文档 ↗', lambda: QDesktopServices.openUrl(QUrl('https://github.com/derrickyau9/Hasselblad-X-System-QEMU-DevKit'))))
         layout.addStretch()
 
     def navigate(self, n):
@@ -424,7 +424,7 @@ def main():
     parser.add_argument('--home', type=Path)
     parser.add_argument('--smoke-test', type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
-    app = QApplication(sys.argv[:1]); app.setApplicationName('X2D II QEMU DevKit'); app.setOrganizationName('X2DII-DevKit')
+    app = QApplication(sys.argv[:1]); app.setApplicationName('X System QEMU DevKit'); app.setOrganizationName('X2DII-DevKit')
     window = Window((args.home or data_home()).resolve()); window.show()
     if args.smoke_test:
         # Packaged-executable verification without requiring UI automation software.

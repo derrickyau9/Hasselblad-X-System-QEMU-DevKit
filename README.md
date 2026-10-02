@@ -2,7 +2,7 @@
 
 **A Windows workbench, with a source-run macOS ARM64 path, for exploring the original Hasselblad X System interfaces and developing guest apps.**
 
-[简体中文](README.zh-CN.md) · [Download Windows app](https://github.com/derrickyau9/Hasselblad-X2D-II-QEMU-DevKit/releases/latest)
+[简体中文](README.zh-CN.md) · [Download Windows app](https://github.com/derrickyau9/Hasselblad-X-System-QEMU-DevKit/releases/latest)
 
 ![DevKit workbench](docs/workbench.png)
 
@@ -61,8 +61,8 @@ The example is a `wl_shm` client compiled for the selected firmware ABI. It runs
 Install Python **3.11+**, clone the repository, and double-click `Launch.cmd`. It creates a local virtual environment and installs dependencies on the first run.
 
 ```powershell
-git clone https://github.com/derrickyau9/Hasselblad-X2D-II-QEMU-DevKit.git
-cd Hasselblad-X2D-II-QEMU-DevKit
+git clone https://github.com/derrickyau9/Hasselblad-X-System-QEMU-DevKit.git
+cd Hasselblad-X-System-QEMU-DevKit
 .\Launch.cmd
 ```
 

@@ -47,8 +47,8 @@ jobs:
           else
             NOTES="docs/releases/$RELEASE_TAG.md"
             if [ -f "$NOTES" ]; then
-              gh release create "$RELEASE_TAG" dist/* --title "Hasselblad X2D II QEMU DevKit $RELEASE_TAG" --notes-file "$NOTES"
+              gh release create "$RELEASE_TAG" dist/* --title "Hasselblad X System QEMU DevKit $RELEASE_TAG" --notes-file "$NOTES"
             else
-              gh release create "$RELEASE_TAG" dist/* --title "Hasselblad X2D II QEMU DevKit $RELEASE_TAG" --generate-notes
+              gh release create "$RELEASE_TAG" dist/* --title "Hasselblad X System QEMU DevKit $RELEASE_TAG" --generate-notes
             fi
           fi
